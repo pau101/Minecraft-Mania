@@ -1,0 +1,22 @@
+modLoader="javafml"
+loaderVersion="[31,)"
+issueTrackerURL="https://github.com/pau101/Minecraft-Mania/issues"
+[[mods]]
+    modId="minecraftmania"
+    version="${version}"
+    displayName="Minecraft Mania"
+    displayURL="https://www.curseforge.com/minecraft/mc-mods/minecraft-mania"
+    authors="pau101"
+    description=""
+[[dependencies.minecraftmania]]
+    modId="forge"
+    mandatory=true
+    versionRange="[31,)"
+    ordering="NONE"
+    side="BOTH"
+[[dependencies.minecraftmania]]
+    modId="minecraft"
+    mandatory=true
+    versionRange="[1.15.2]"
+    ordering="NONE"
+    side="BOTH"
