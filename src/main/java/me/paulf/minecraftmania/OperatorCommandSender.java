@@ -7,6 +7,7 @@ import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.ListNBT;
 import net.minecraft.nbt.StringNBT;
 import net.minecraft.particles.ParticleType;
+import net.minecraft.potion.Effect;
 import net.minecraft.state.IProperty;
 import net.minecraft.util.SoundCategory;
 import net.minecraft.util.SoundEvent;
@@ -82,5 +83,10 @@ public class OperatorCommandSender implements CommandSender {
         this.accept("/gamerule showDeathMessages false");
         this.accept("/kill");
         this.accept("/gamerule showDeathMessages true");
+    }
+
+    @Override
+    public void effect(final Effect effect, final int duration, final int amplifier, final boolean hideParticles) {
+        this.accept("/effect give @s %s %d %d %s", effect.getRegistryName(), duration, amplifier, hideParticles);
     }
 }

@@ -5,6 +5,7 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.item.Item;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.particles.ParticleType;
+import net.minecraft.potion.Effect;
 import net.minecraft.util.SoundCategory;
 import net.minecraft.util.SoundEvent;
 import net.minecraft.util.math.BlockPos;
@@ -25,4 +26,6 @@ public interface CommandSender {
     void tellraw(final String player, final ITextComponent message);
 
     void kill();
+
+    void effect(final Effect effect, final int duration, final int amplifier, final boolean hideParticles);
 }

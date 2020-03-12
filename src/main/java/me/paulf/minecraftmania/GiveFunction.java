@@ -17,14 +17,7 @@ public class GiveFunction implements CommandFunction {
 
     @Override
     public void run(final ViewerCommand command, final CommandSender sender, final World world, final PlayerEntity player) {
-        final CompoundNBT nbt = new CompoundNBT();
-        //noinspection deprecation
-        if (this.item.getMaxStackSize() == 1) {
-            final CompoundNBT display = new CompoundNBT();
-            display.putString("Name", String.format("{\"translate\":\"%2$s\",\"extra\":[{\"text\":\" from %1$s\"}],\"color\":\"gold\"}", command.getViewer(), this.item.getTranslationKey()));
-            nbt.put("display", display);
-        }
-        sender.give(this.item, nbt, 1);
+        sender.give(this.item, new CompoundNBT(), 1);
         sender.tellraw(player.getGameProfile().getName(), new TranslationTextComponent("mania." + command.getCommand(),
             new StringTextComponent(command.getViewer()).applyTextStyle(TextFormatting.GOLD),
             new TranslationTextComponent(this.item.getTranslationKey()).applyTextStyle(TextFormatting.AQUA)

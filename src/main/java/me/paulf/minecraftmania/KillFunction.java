@@ -6,7 +6,7 @@ import net.minecraft.util.text.TextFormatting;
 import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.World;
 
-public class KillCommand implements CommandFunction {
+public class KillFunction implements CommandFunction {
     @Override
     public void run(final ViewerCommand command, final CommandSender sender, final World world, final PlayerEntity player) {
         sender.kill();

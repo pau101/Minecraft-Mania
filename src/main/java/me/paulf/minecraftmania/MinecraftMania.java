@@ -6,6 +6,7 @@ import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.item.Items;
+import net.minecraft.potion.Effects;
 import net.minecraft.util.text.ChatType;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TranslationTextComponent;
@@ -25,7 +26,14 @@ public final class MinecraftMania {
 
     private final ViewerCommandMap map = new ViewerCommandMap.Builder()
         // Misc
-        .add("kill", new KillCommand())
+        .add("kill", new KillFunction())
+        // Effects
+        .add("effect_damage", new EffectFunction(Effects.INSTANT_DAMAGE, 1, 0))
+        .add("effect_health", new EffectFunction(Effects.INSTANT_HEALTH, 1, 0))
+        .add("effect_saturation", new EffectFunction(Effects.SATURATION, 4, 0))
+        .add("effect_blindness", new EffectFunction(Effects.BLINDNESS, 20, 0))
+        .add("effect_speed", new EffectFunction(Effects.SPEED, 60, 9))
+        .add("effect_slowness", new EffectFunction(Effects.SLOWNESS, 30, 2))
         // Summons
         .add("summon_creeper", new SummonFunction(EntityType.CREEPER))
         .add("summon_blaze", new SummonFunction(EntityType.BLAZE))

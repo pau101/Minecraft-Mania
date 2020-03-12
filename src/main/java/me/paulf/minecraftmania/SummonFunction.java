@@ -35,8 +35,6 @@ public final class SummonFunction implements CommandFunction {
     public void run(final ViewerCommand command, final CommandSender sender, final World world, final PlayerEntity player) {
         final AxisAlignedBB spawn = this.optimalSpawn(world, player);
         final CompoundNBT nbt = new CompoundNBT();
-        nbt.putString("CustomName", String.format("{\"text\":\"%1$s's \",\"extra\":[{\"translate\":\"%2$s\"}],\"color\":\"gold\"}", command.getViewer(), this.type.getTranslationKey()));
-        nbt.putBoolean("CustomNameVisible", true);
         this.nbtSupplier.accept(player, nbt);
         final Vec3d center = spawn.getCenter();
         sender.summon(this.type, new Vec3d(center.x, spawn.minY, center.z), nbt);
