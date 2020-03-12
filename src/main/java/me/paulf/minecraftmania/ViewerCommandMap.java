@@ -2,6 +2,9 @@ package me.paulf.minecraftmania;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSortedMap;
+
+import java.util.Comparator;
 
 public class ViewerCommandMap {
     private final ImmutableMap<String, CommandFunction> map;
@@ -21,7 +24,7 @@ public class ViewerCommandMap {
     }
 
     public static class Builder {
-        private final ImmutableMap.Builder<String, CommandFunction> map = new ImmutableMap.Builder<>();
+        private final ImmutableSortedMap.Builder<String, CommandFunction> map = new ImmutableSortedMap.Builder<>(Comparator.naturalOrder());
 
         public Builder add(final String name, final CommandFunction command) {
             this.map.put(name, command);
