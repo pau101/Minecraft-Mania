@@ -8,10 +8,10 @@ import net.minecraft.util.text.TextFormatting;
 import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.World;
 
-public class GiveCommand implements CommandFunction {
+public class GiveFunction implements CommandFunction {
     private final Item item;
 
-    public GiveCommand(final Item item) {
+    public GiveFunction(final Item item) {
         this.item = item;
     }
 

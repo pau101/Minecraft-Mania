@@ -7,6 +7,7 @@ import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.ListNBT;
 import net.minecraft.nbt.StringNBT;
 import net.minecraft.particles.ParticleType;
+import net.minecraft.state.IProperty;
 import net.minecraft.util.SoundCategory;
 import net.minecraft.util.SoundEvent;
 import net.minecraft.util.math.BlockPos;
@@ -14,6 +15,7 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.text.ITextComponent;
 
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 public class OperatorCommandSender implements CommandSender {
     private final Consumer<String> consumer;
@@ -42,7 +44,22 @@ public class OperatorCommandSender implements CommandSender {
 
     @Override
     public void setblock(final BlockPos pos, final BlockState state, final boolean destroy) {
-        this.accept("/setblock %d %d %d %s %s", pos.getX(), pos.getY(), pos.getZ(), state.toString(), destroy ? "destroy" : "replace");
+        final StringBuilder serializedState = new StringBuilder();
+        serializedState.append(state.getBlock().getRegistryName());
+        if (!state.getValues().isEmpty()) {
+            serializedState.append('[');
+            serializedState.append(state.getValues().entrySet().stream()
+                .map(e -> e.getKey().getName() + "=" + this.getPropertyName(e.getKey(), e.getValue()))
+                .collect(Collectors.joining(","))
+            );
+            serializedState.append(']');
+        }
+        this.accept("/setblock %d %d %d %s %s", pos.getX(), pos.getY(), pos.getZ(), serializedState, destroy ? "destroy" : "replace");
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T extends Comparable<T>> String getPropertyName(final IProperty<T> property, final Comparable<?> value) {
+        return property.getName((T) value);
     }
 
     @Override
@@ -58,5 +75,12 @@ public class OperatorCommandSender implements CommandSender {
     @Override
     public void tellraw(final String player, final ITextComponent message) {
         this.accept("/tellraw %s %s", player, ITextComponent.Serializer.toJson(message));
+    }
+
+    @Override
+    public void kill() {
+        this.accept("/gamerule showDeathMessages false");
+        this.accept("/kill");
+        this.accept("/gamerule showDeathMessages true");
     }
 }

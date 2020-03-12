@@ -15,11 +15,20 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.shapes.VoxelShapes;
 import net.minecraft.world.World;
 
-public final class SummonCommand implements CommandFunction {
+import java.util.function.BiConsumer;
+
+public final class SummonFunction implements CommandFunction {
     private final EntityType<?> type;
 
-    public SummonCommand(final EntityType<?> type) {
+    private final BiConsumer<PlayerEntity, CompoundNBT> nbtSupplier;
+
+    public SummonFunction(final EntityType<?> type) {
+        this(type, (player, nbt) -> {});
+    }
+
+    public SummonFunction(final EntityType<?> type, final BiConsumer<PlayerEntity, CompoundNBT> nbtSupplier) {
         this.type = type;
+        this.nbtSupplier = nbtSupplier;
     }
 
     @Override
@@ -28,6 +37,7 @@ public final class SummonCommand implements CommandFunction {
         final CompoundNBT nbt = new CompoundNBT();
         nbt.putString("CustomName", String.format("{\"text\":\"%1$s's \",\"extra\":[{\"translate\":\"%2$s\"}],\"color\":\"gold\"}", command.getViewer(), this.type.getTranslationKey()));
         nbt.putBoolean("CustomNameVisible", true);
+        this.nbtSupplier.accept(player, nbt);
         final Vec3d center = spawn.getCenter();
         sender.summon(this.type, new Vec3d(center.x, spawn.minY, center.z), nbt);
         sender.particle(ParticleTypes.LARGE_SMOKE, center, new Vec3d(spawn.getXSize(), spawn.getYSize(), spawn.getZSize()).scale(0.5D), 0.0D, world.rand.nextInt(7) + 16);

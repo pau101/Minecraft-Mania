@@ -23,4 +23,6 @@ public interface CommandSender {
     void playsound(final SoundEvent sound, final SoundCategory category, final Vec3d pos, final float volume, final float pitch);
 
     void tellraw(final String player, final ITextComponent message);
+
+    void kill();
 }
