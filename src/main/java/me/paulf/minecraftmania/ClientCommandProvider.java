@@ -142,7 +142,7 @@ public final class ClientCommandProvider {
     }
 
     private static final class DummyServer extends IntegratedServer {
-        static DummyServer INSTANCE = instantiate(DummyServer.class);
+        private static final DummyServer INSTANCE = instantiate(DummyServer.class);
 
         public DummyServer() {
             //noinspection ConstantConditions

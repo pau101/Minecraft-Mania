@@ -15,10 +15,10 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.shapes.VoxelShapes;
 import net.minecraft.world.World;
 
-public final class SpawnCommand implements CommandFunction {
+public final class SummonCommand implements CommandFunction {
     private final EntityType<?> type;
 
-    public SpawnCommand(final EntityType<?> type) {
+    public SummonCommand(final EntityType<?> type) {
         this.type = type;
     }
 

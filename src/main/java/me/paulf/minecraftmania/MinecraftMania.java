@@ -19,7 +19,7 @@ public final class MinecraftMania {
     public static final String ID = "minecraftmania";
 
     private final ViewerCommandMap map = new ViewerCommandMap.Builder()
-        .add("summon_zombie", new SpawnCommand(EntityType.ZOMBIE))
+        .add("summon_zombie", new SummonCommand(EntityType.ZOMBIE))
         .add("give_diamond", new GiveCommand(Items.DIAMOND))
         .build();
 
