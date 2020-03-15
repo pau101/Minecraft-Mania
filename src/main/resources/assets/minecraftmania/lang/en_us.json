@@ -1,4 +1,5 @@
 {
+    "mania.disable_jump": "Viewer %1$s disabled jump",
     "mania.give": "Viewer %1$s gave a %2$s",
     "mania.kill": "Viewer %1$s executed order 66",
     "mania.effect": "Viewer %1$s gave %2$s",

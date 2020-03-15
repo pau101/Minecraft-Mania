@@ -5,6 +5,7 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import me.paulf.minecraftmania.function.CommandFunction;
 import me.paulf.minecraftmania.function.DayTimeFunction;
+import me.paulf.minecraftmania.function.DisableKeyFunction;
 import me.paulf.minecraftmania.function.EffectFunction;
 import me.paulf.minecraftmania.function.GiveFunction;
 import me.paulf.minecraftmania.function.KillFunction;
@@ -16,6 +17,7 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Items;
 import net.minecraft.potion.Effects;
+import net.minecraft.util.math.SectionPos;
 import net.minecraft.util.text.ChatType;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.StringTextComponent;
@@ -45,7 +47,7 @@ public final class MinecraftMania {
 
     private final ViewerCommandMap map = new ViewerCommandMap.Builder()
         // Client
-//        .add("disable_jump", )
+        .add("disable_jump", new DisableKeyFunction(Minecraft.getInstance().gameSettings.keyBindJump, 2 * 60))
         // Misc
         .add("kill", new KillFunction())
         .add("time_day", new DayTimeFunction())
