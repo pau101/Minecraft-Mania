@@ -15,6 +15,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.text.ITextComponent;
 
+import java.util.Locale;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -74,8 +75,8 @@ public class OperatorCommandSender implements CommandSender {
     }
 
     @Override
-    public void tellraw(final String player, final ITextComponent message) {
-        this.accept("/tellraw %s %s", player, ITextComponent.Serializer.toJson(message));
+    public void tell(final ITextComponent message) {
+        this.accept("/tellraw @s %s", ITextComponent.Serializer.toJson(message));
     }
 
     @Override
@@ -89,8 +90,8 @@ public class OperatorCommandSender implements CommandSender {
     }
 
     @Override
-    public void time(final String time) {
-        this.accept("/time set %s", time);
+    public void time(final TimeOfDay time) {
+        this.accept("/time set %s", time.name().toLowerCase(Locale.ROOT));
     }
 
     @Override

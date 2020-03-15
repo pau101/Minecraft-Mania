@@ -23,13 +23,20 @@ public interface CommandSender {
 
     void playsound(final SoundEvent sound, final SoundCategory category, final Vec3d pos, final float volume, final float pitch);
 
-    void tellraw(final String player, final ITextComponent message);
+    void tell(final ITextComponent message);
 
     void kill();
 
     void effect(final Effect effect, final int duration, final int amplifier, final boolean hideParticles);
 
-    void time(final String time);
+    void time(final TimeOfDay time);
 
     void gamerule(final String name, final Object value);
+
+    enum TimeOfDay {
+        DAY,
+        NOON,
+        NIGHT,
+        MIDNIGHT
+    }
 }

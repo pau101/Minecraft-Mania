@@ -1,18 +1,16 @@
 package me.paulf.minecraftmania.function;
 
+import me.paulf.minecraftmania.CommandSender;
 import me.paulf.minecraftmania.MinecraftMania;
-import net.minecraft.util.text.StringTextComponent;
-import net.minecraft.util.text.TextFormatting;
-import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.GameRules;
 
 public class NightTimeFunction implements CommandFunction {
     @Override
     public void run(final MinecraftMania.Context context) {
         if (context.world().getGameRules().getBoolean(GameRules.DO_DAYLIGHT_CYCLE)) {
-            context.commands().time("night");
+            context.commands().time(CommandSender.TimeOfDay.NIGHT);
         } else {
-            context.commands().time("midnight");
+            context.commands().time(CommandSender.TimeOfDay.MIDNIGHT);
         }
     }
 }

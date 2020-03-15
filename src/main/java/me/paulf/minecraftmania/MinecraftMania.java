@@ -251,7 +251,7 @@ public final class MinecraftMania {
         void accept(final ViewerCommand command) {
             final Context context = new Context(this, this.sender, this.user.world, this.user, command);
             final CommandFunction function = MinecraftMania.this.map.get(command);
-            context.commands().tellraw("@s", function.getMessage(context));
+            context.commands().tell(function.getMessage(context));
             function.run(context);
         }
 
