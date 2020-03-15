@@ -1,5 +1,6 @@
-package me.paulf.minecraftmania;
+package me.paulf.minecraftmania.function;
 
+import me.paulf.minecraftmania.MinecraftMania;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.CompoundNBT;
@@ -32,14 +33,14 @@ public final class SummonFunction implements CommandFunction {
     }
 
     @Override
-    public void run(final ViewerCommand command, final CommandSender sender, final World world, final PlayerEntity player) {
-        final AxisAlignedBB spawn = this.optimalSpawn(world, player);
+    public void run(final MinecraftMania.Context context) {
+        final AxisAlignedBB spawn = this.optimalSpawn(context.world(), context.player());
         final CompoundNBT nbt = new CompoundNBT();
-        this.nbtSupplier.accept(player, nbt);
+        this.nbtSupplier.accept(context.player(), nbt);
         final Vec3d center = spawn.getCenter();
-        sender.summon(this.type, new Vec3d(center.x, spawn.minY, center.z), nbt);
-        sender.particle(ParticleTypes.LARGE_SMOKE, center, new Vec3d(spawn.getXSize(), spawn.getYSize(), spawn.getZSize()).scale(0.5D), 0.0D, world.rand.nextInt(7) + 16);
-        sender.playsound(SoundEvents.ITEM_FIRECHARGE_USE, SoundCategory.PLAYERS, center, 0.2F, 1.0F);
+        context.commands().summon(this.type, new Vec3d(center.x, spawn.minY, center.z), nbt);
+        context.commands().particle(ParticleTypes.LARGE_SMOKE, center, new Vec3d(spawn.getXSize(), spawn.getYSize(), spawn.getZSize()).scale(0.5D), 0.0D, context.world().rand.nextInt(7) + 16);
+        context.commands().playsound(SoundEvents.ITEM_FIRECHARGE_USE, SoundCategory.PLAYERS, center, 0.2F, 1.0F);
     }
 
     private AxisAlignedBB size() {

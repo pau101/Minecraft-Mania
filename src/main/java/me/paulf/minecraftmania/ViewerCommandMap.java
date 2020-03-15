@@ -3,13 +3,14 @@ package me.paulf.minecraftmania;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedMap;
+import me.paulf.minecraftmania.function.CommandFunction;
 
 import java.util.Comparator;
 
 public class ViewerCommandMap {
     private final ImmutableMap<String, CommandFunction> map;
 
-    private final CommandFunction noop = (command, c, w, p) -> {};
+    private final CommandFunction noop = (p) -> {};
 
     private ViewerCommandMap(final Builder builder) {
         this.map = builder.map.build();

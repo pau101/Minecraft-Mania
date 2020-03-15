@@ -80,13 +80,21 @@ public class OperatorCommandSender implements CommandSender {
 
     @Override
     public void kill() {
-        this.accept("/gamerule showDeathMessages false");
         this.accept("/kill");
-        this.accept("/gamerule showDeathMessages true");
     }
 
     @Override
     public void effect(final Effect effect, final int duration, final int amplifier, final boolean hideParticles) {
         this.accept("/effect give @s %s %d %d %s", effect.getRegistryName(), duration, amplifier, hideParticles);
+    }
+
+    @Override
+    public void time(final String time) {
+        this.accept("/time set %s", time);
+    }
+
+    @Override
+    public void gamerule(final String name, final Object value) {
+        this.accept("/gamerule %s %s", name, String.valueOf(value));
     }
 }

@@ -3,21 +3,40 @@ package me.paulf.minecraftmania;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
+import me.paulf.minecraftmania.function.CommandFunction;
+import me.paulf.minecraftmania.function.DayTimeFunction;
+import me.paulf.minecraftmania.function.EffectFunction;
+import me.paulf.minecraftmania.function.GiveFunction;
+import me.paulf.minecraftmania.function.KillFunction;
+import me.paulf.minecraftmania.function.NightTimeFunction;
+import me.paulf.minecraftmania.function.SummonFunction;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Items;
 import net.minecraft.potion.Effects;
 import net.minecraft.util.text.ChatType;
 import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.StringTextComponent;
+import net.minecraft.util.text.TextFormatting;
 import net.minecraft.util.text.TranslationTextComponent;
+import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.ClientChatReceivedEvent;
 import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.eventbus.api.Event;
+import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.common.Mod;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.ListIterator;
 import java.util.Locale;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 @Mod(MinecraftMania.ID)
@@ -25,8 +44,12 @@ public final class MinecraftMania {
     public static final String ID = "minecraftmania";
 
     private final ViewerCommandMap map = new ViewerCommandMap.Builder()
+        // Client
+//        .add("disable_jump", )
         // Misc
         .add("kill", new KillFunction())
+        .add("time_day", new DayTimeFunction())
+        .add("time_night", new NightTimeFunction())
         // Effects
         .add("effect_damage", new EffectFunction(Effects.INSTANT_DAMAGE, 1, 0))
         .add("effect_health", new EffectFunction(Effects.INSTANT_HEALTH, 1, 0))
@@ -34,6 +57,7 @@ public final class MinecraftMania {
         .add("effect_blindness", new EffectFunction(Effects.BLINDNESS, 20, 0))
         .add("effect_speed", new EffectFunction(Effects.SPEED, 60, 9))
         .add("effect_slowness", new EffectFunction(Effects.SLOWNESS, 30, 2))
+        .add("effect_jumping", new EffectFunction(Effects.JUMP_BOOST, 60, 9))
         // Summons
         .add("summon_creeper", new SummonFunction(EntityType.CREEPER))
         .add("summon_blaze", new SummonFunction(EntityType.BLAZE))
@@ -75,14 +99,20 @@ public final class MinecraftMania {
 
     public MinecraftMania() {
         DistExecutor.runWhenOn(Dist.CLIENT, () -> () -> {
-            MinecraftForge.EVENT_BUS.<ClientPlayerNetworkEvent.LoggedInEvent>addListener(e -> this.join(e));
-            MinecraftForge.EVENT_BUS.<ClientPlayerNetworkEvent.RespawnEvent>addListener(e -> this.join(e));
-            MinecraftForge.EVENT_BUS.<ClientPlayerNetworkEvent.LoggedOutEvent>addListener(e -> this.leave());
+            final IEventBus bus = MinecraftForge.EVENT_BUS;
+            bus.<TickEvent.ClientTickEvent>addListener(e -> {
+                if (e.phase == TickEvent.Phase.END && !Minecraft.getInstance().isGamePaused()) {
+                    this.state.tick();
+                }
+            });
+            bus.<ClientPlayerNetworkEvent.LoggedInEvent>addListener(e -> this.join(e.getPlayer()));
+            bus.<ClientPlayerNetworkEvent.RespawnEvent>addListener(e -> this.join(e.getPlayer()));
+            bus.<ClientPlayerNetworkEvent.LoggedOutEvent>addListener(e -> this.leave());
             new ClientCommandProvider.Builder()
                 .add(this::mania)
                 .build()
-                .register(MinecraftForge.EVENT_BUS);
-            MinecraftForge.EVENT_BUS.<ClientChatReceivedEvent>addListener(e -> {
+                .register(bus);
+            bus.<ClientChatReceivedEvent>addListener(e -> {
                 if (e.getType() == ChatType.SYSTEM) {
                     final ITextComponent message = e.getMessage();
                     if (this.test(message, c -> c instanceof TranslationTextComponent && "argument.entity.notfound.player".equals(((TranslationTextComponent) c).getKey()))) {
@@ -91,6 +121,11 @@ public final class MinecraftMania {
                 }
             });
         });
+    }
+
+    private void moveState(final State state) {
+        this.state.stop();
+        this.state = state;
     }
 
     public boolean test(final ITextComponent message, final Predicate<ITextComponent> predicate) {
@@ -131,26 +166,66 @@ public final class MinecraftMania {
     }
 
     private void leave() {
-        this.state = new OutOfGameState();
+        this.moveState(new OutOfGameState());
     }
 
-    private void join(final ClientPlayerNetworkEvent event) {
-        final ClientPlayerEntity player = event.getPlayer();
-        if (player == null) {
-            this.leave();
-        } else {
-            this.state = new InGameState(player);
-        }
+    private void join(final ClientPlayerEntity player) {
+        this.moveState(new InGameState(player));
     }
 
     abstract class State {
         abstract void accept(final ViewerCommand command);
+
+        void tick() {
+        }
+
+        void stop() {
+        }
     }
 
     class OutOfGameState extends State {
         @Override
         void accept(final ViewerCommand command) {
+        }
+    }
 
+    public static final class Context {
+        final InGameState state;
+        final CommandSender commands;
+        final World world;
+        final PlayerEntity player;
+        final ViewerCommand command;
+
+        private Context(final InGameState state, final CommandSender commands, final World world, final PlayerEntity player, final ViewerCommand command) {
+            this.state = state;
+            this.commands = commands;
+            this.world = world;
+            this.player = player;
+            this.command = command;
+        }
+
+        public String getCommand() {
+            return this.command.getCommand();
+        }
+
+        public CommandSender commands() {
+            return this.commands;
+        }
+
+        public World world() {
+            return this.world;
+        }
+
+        public PlayerEntity player() {
+            return this.player;
+        }
+
+        public ITextComponent getViewerName() {
+            return new StringTextComponent(this.command.getViewer()).applyTextStyle(TextFormatting.GOLD);
+        }
+
+        public <E extends Event> void addTimedEventListener(final int seconds, final Consumer<E> listener) {
+            this.state.addRunningFunction(new RunningFunction(this.command, listener, seconds));
         }
     }
 
@@ -159,14 +234,71 @@ public final class MinecraftMania {
 
         final CommandSender sender;
 
+        final List<RunningFunction> functions;
+
         InGameState(final ClientPlayerEntity user) {
             this.user = user;
             this.sender = new OperatorCommandSender(user::sendChatMessage);
+            this.functions = new ArrayList<>();
+        }
+
+        void addRunningFunction(final RunningFunction function) {
+            this.functions.add(function);
+            function.start();
         }
 
         @Override
         void accept(final ViewerCommand command) {
-            MinecraftMania.this.map.get(command).run(command, this.sender, this.user.world, this.user);
+            final Context context = new Context(this, this.sender, this.user.world, this.user, command);
+            final CommandFunction function = MinecraftMania.this.map.get(command);
+            context.commands().tellraw("@s", function.getMessage(context));
+            function.run(context);
+        }
+
+        @Override
+        void tick() {
+            super.tick();
+            final ListIterator<RunningFunction> it = this.functions.listIterator();
+            while (it.hasNext()) {
+                final RunningFunction func = it.next();
+                if (func.tick()) {
+                    func.stop();
+                    it.remove();
+                }
+            }
+        }
+
+        @Override
+        void stop() {
+            super.stop();
+            this.functions.forEach(RunningFunction::stop);
+            this.functions.clear();
+        }
+    }
+
+    static class RunningFunction {
+        final ViewerCommand command;
+        final Consumer<? extends Event> listener;
+        final int duration;
+        int time;
+
+        RunningFunction(final ViewerCommand command, final Consumer<? extends Event> listener, final int duration) {
+            this.command = command;
+            this.listener = listener;
+            this.duration = duration;
+            this.time = 0;
+        }
+
+        boolean tick() {
+            return ++this.time >= this.duration;
+        }
+
+        void start() {
+            MinecraftForge.EVENT_BUS.addListener(this.listener);
+        }
+
+        void stop() {
+            MinecraftForge.EVENT_BUS.unregister(this.listener);
         }
     }
 }

@@ -28,4 +28,8 @@ public interface CommandSender {
     void kill();
 
     void effect(final Effect effect, final int duration, final int amplifier, final boolean hideParticles);
+
+    void time(final String time);
+
+    void gamerule(final String name, final Object value);
 }
