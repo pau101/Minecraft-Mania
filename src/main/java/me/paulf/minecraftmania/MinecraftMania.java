@@ -15,6 +15,8 @@ import me.paulf.minecraftmania.function.NightTimeFunction;
 import me.paulf.minecraftmania.function.SummonFunction;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
+import net.minecraft.client.gui.IngameGui;
+import net.minecraft.client.gui.NewChatGui;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Items;
@@ -28,13 +30,17 @@ import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.ClientChatReceivedEvent;
 import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
+import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.Event;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -104,9 +110,22 @@ public final class MinecraftMania {
 
     private State state = new OutOfGameState();
 
+
     public MinecraftMania() {
         DistExecutor.runWhenOn(Dist.CLIENT, () -> () -> {
             final IEventBus bus = MinecraftForge.EVENT_BUS;
+            final Method ADD_MESSAGE = ObfuscationReflectionHelper.findMethod(NewChatGui.class, "func_146237_a", ITextComponent.class, int.class, int.class, boolean.class);
+            bus.<RenderGameOverlayEvent.Chat>addListener(e -> {
+                final IngameGui gui = Minecraft.getInstance().ingameGUI;
+                final NewChatGui chat = gui.getChatGUI();
+                final ITextComponent text = new StringTextComponent("Sticky").applyTextStyle(TextFormatting.ITALIC);
+                final int time = gui.getTicks();
+                try {
+                    ADD_MESSAGE.invoke(chat, text, 300, time, false);
+                } catch (final IllegalAccessException | InvocationTargetException ex) {
+                    throw new RuntimeException(ex);
+                }
+            });
             bus.<TickEvent.ClientTickEvent>addListener(e -> {
                 if (e.phase == TickEvent.Phase.END && !Minecraft.getInstance().isGamePaused()) {
                     this.state.tick();
