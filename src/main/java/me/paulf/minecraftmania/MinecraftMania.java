@@ -1,8 +1,10 @@
 package me.paulf.minecraftmania;
 
+import com.google.common.primitives.Ints;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
+import me.paulf.minecraftmania.function.ChangeLanguageFunction;
 import me.paulf.minecraftmania.function.CommandFunction;
 import me.paulf.minecraftmania.function.DayTimeFunction;
 import me.paulf.minecraftmania.function.DisableKeyFunction;
@@ -17,7 +19,6 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Items;
 import net.minecraft.potion.Effects;
-import net.minecraft.util.math.SectionPos;
 import net.minecraft.util.text.ChatType;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.StringTextComponent;
@@ -34,10 +35,11 @@ import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.common.Mod;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.ListIterator;
+import java.time.Duration;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Locale;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
@@ -47,7 +49,10 @@ public final class MinecraftMania {
 
     private final ViewerCommandMap map = new ViewerCommandMap.Builder()
         // Client
-        .add("disable_jump", new DisableKeyFunction(Minecraft.getInstance().gameSettings.keyBindJump, 2 * 60))
+        .add("disable_jump", new DisableKeyFunction(Minecraft.getInstance().gameSettings.keyBindJump, Duration.ofMinutes(2)))
+        .add("lang_pirate", new ChangeLanguageFunction("en_pt", Duration.ofMinutes(2)))
+        .add("lang_shakespearean", new ChangeLanguageFunction("enws", Duration.ofMinutes(2)))
+        .add("lang_lolcat", new ChangeLanguageFunction("lol_us", Duration.ofMinutes(2)))
         // Misc
         .add("kill", new KillFunction())
         .add("time_day", new DayTimeFunction())
@@ -226,8 +231,22 @@ public final class MinecraftMania {
             return new StringTextComponent(this.command.getViewer()).applyTextStyle(TextFormatting.GOLD);
         }
 
-        public <E extends Event> void addTimedEventListener(final int seconds, final Consumer<E> listener) {
-            this.state.addRunningFunction(new RunningFunction(this.command, listener, seconds));
+        public <E extends Event> void addRunningEventListener(final Duration duration, final Consumer<E> listener) {
+            this.addRunningFunction(duration, new RunningFunction() {
+                @Override
+                public void start() {
+                    MinecraftForge.EVENT_BUS.addListener(listener);
+                }
+
+                @Override
+                public void stop() {
+                    MinecraftForge.EVENT_BUS.unregister(listener);
+                }
+            });
+        }
+
+        public <E extends Event> void addRunningFunction(final Duration duration, final RunningFunction function) {
+            this.state.addRunningFunction(this.command, Ints.checkedCast(duration.getSeconds()) * 20, function);
         }
     }
 
@@ -236,17 +255,25 @@ public final class MinecraftMania {
 
         final CommandSender sender;
 
-        final List<RunningFunction> functions;
+        final Map<String, RunningCommandFunction> functions;
 
         InGameState(final ClientPlayerEntity user) {
             this.user = user;
             this.sender = new OperatorCommandSender(user::sendChatMessage);
-            this.functions = new ArrayList<>();
+            this.functions = new HashMap<>();
         }
 
-        void addRunningFunction(final RunningFunction function) {
-            this.functions.add(function);
-            function.start();
+        void addRunningFunction(final ViewerCommand command, final int ticks, final RunningFunction function) {
+            this.functions.compute(command.getCommand(), (k, v) -> {
+                if (v == null) {
+                    final RunningCommandFunction func = new RunningCommandFunction(command, function, ticks);
+                    func.start();
+                    return func;
+                } else {
+                    v.duration += ticks;
+                    return v;
+                }
+            });
         }
 
         @Override
@@ -260,9 +287,9 @@ public final class MinecraftMania {
         @Override
         void tick() {
             super.tick();
-            final ListIterator<RunningFunction> it = this.functions.listIterator();
+            final Iterator<RunningCommandFunction> it = this.functions.values().iterator();
             while (it.hasNext()) {
-                final RunningFunction func = it.next();
+                final RunningCommandFunction func = it.next();
                 if (func.tick()) {
                     func.stop();
                     it.remove();
@@ -273,34 +300,42 @@ public final class MinecraftMania {
         @Override
         void stop() {
             super.stop();
-            this.functions.forEach(RunningFunction::stop);
+            this.functions.values().forEach(RunningCommandFunction::stop);
             this.functions.clear();
         }
     }
 
-    static class RunningFunction {
+    static class RunningCommandFunction {
         final ViewerCommand command;
-        final Consumer<? extends Event> listener;
-        final int duration;
+        final RunningFunction function;
+        int duration;
         int time;
 
-        RunningFunction(final ViewerCommand command, final Consumer<? extends Event> listener, final int duration) {
+        RunningCommandFunction(final ViewerCommand command, final RunningFunction function, final int duration) {
             this.command = command;
-            this.listener = listener;
+            this.function = function;
             this.duration = duration;
             this.time = 0;
         }
 
+        String getName() {
+            return this.command.getCommand();
+        }
+
         boolean tick() {
-            return ++this.time >= this.duration;
+            if (this.time++ < this.duration) {
+                this.function.tick();
+            }
+            return this.time >= this.duration;
         }
 
         void start() {
-            MinecraftForge.EVENT_BUS.addListener(this.listener);
+            this.function.start();
         }
 
         void stop() {
-            MinecraftForge.EVENT_BUS.unregister(this.listener);
+            this.function.stop();
         }
     }
+
 }
