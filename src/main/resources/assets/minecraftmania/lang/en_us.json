@@ -1,5 +1,6 @@
 {
-    "mania.disable_jump": "Viewer %1$s disabled jump",
+    "mania.key": "Viewer %1$s disabled %2$s",
+    "mania.key.running": "%1$s is disabled for %2$s more seconds",
     "mania.give": "Viewer %1$s gave a %2$s",
     "mania.kill": "Viewer %1$s executed order 66",
     "mania.effect": "Viewer %1$s gave %2$s",

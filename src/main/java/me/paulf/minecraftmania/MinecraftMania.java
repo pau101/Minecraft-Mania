@@ -45,8 +45,8 @@ import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.time.Duration;
-import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -280,7 +280,7 @@ public final class MinecraftMania {
         InGameState(final ClientPlayerEntity user) {
             this.user = user;
             this.sender = new OperatorCommandSender(user::sendChatMessage);
-            this.functions = new HashMap<>();
+            this.functions = new LinkedHashMap<>();
         }
 
         void addRunningFunction(final ViewerCommand command, final int ticks, final RunningFunction function) {
@@ -371,15 +371,17 @@ public final class MinecraftMania {
         }
 
         void start() {
+            MinecraftForge.EVENT_BUS.register(this.function);
             this.function.start();
         }
 
         void stop() {
             this.function.stop();
+            MinecraftForge.EVENT_BUS.unregister(this.function);
         }
 
         public ITextComponent getMessage() {
-            return this.function.getMessage(this.command, (this.duration - this.time) / 20);
+            return this.function.getMessage(this.command, (this.duration - this.time + 19) / 20);
         }
     }
 
