@@ -4,6 +4,8 @@ import com.google.common.primitives.Ints;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import me.paulf.minecraftmania.function.ChangeLanguageFunction;
 import me.paulf.minecraftmania.function.CommandFunction;
 import me.paulf.minecraftmania.function.DayTimeFunction;
@@ -35,6 +37,7 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.Event;
 import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
@@ -110,7 +113,6 @@ public final class MinecraftMania {
 
     private State state = new OutOfGameState();
 
-
     public MinecraftMania() {
         DistExecutor.runWhenOn(Dist.CLIENT, () -> () -> {
             final IEventBus bus = MinecraftForge.EVENT_BUS;
@@ -118,17 +120,15 @@ public final class MinecraftMania {
             bus.<RenderGameOverlayEvent.Chat>addListener(e -> {
                 final IngameGui gui = Minecraft.getInstance().ingameGUI;
                 final NewChatGui chat = gui.getChatGUI();
-                final ITextComponent text = new StringTextComponent("Sticky").applyTextStyle(TextFormatting.ITALIC);
+                final Int2ObjectMap<ITextComponent> messages = new Int2ObjectOpenHashMap<>();
                 final int time = gui.getTicks();
-                try {
-                    ADD_MESSAGE.invoke(chat, text, 300, time, false);
-                } catch (final IllegalAccessException | InvocationTargetException ex) {
-                    throw new RuntimeException(ex);
-                }
-            });
-            bus.<TickEvent.ClientTickEvent>addListener(e -> {
-                if (e.phase == TickEvent.Phase.END && !Minecraft.getInstance().isGamePaused()) {
-                    this.state.tick();
+                MinecraftForge.EVENT_BUS.post(new StickyChatEvent(messages));
+                for (final Int2ObjectMap.Entry<ITextComponent> entry : messages.int2ObjectEntrySet()) {
+                    try {
+                        ADD_MESSAGE.invoke(chat, entry.getValue(), entry.getIntKey(), time, false);
+                    } catch (final IllegalAccessException | InvocationTargetException ex) {
+                        throw new RuntimeException(ex);
+                    }
                 }
             });
             bus.<ClientPlayerNetworkEvent.LoggedInEvent>addListener(e -> this.join(e.getPlayer()));
@@ -152,6 +152,7 @@ public final class MinecraftMania {
     private void moveState(final State state) {
         this.state.stop();
         this.state = state;
+        this.state.start();
     }
 
     public boolean test(final ITextComponent message, final Predicate<ITextComponent> predicate) {
@@ -202,7 +203,7 @@ public final class MinecraftMania {
     abstract class State {
         abstract void accept(final ViewerCommand command);
 
-        void tick() {
+        void start() {
         }
 
         void stop() {
@@ -303,22 +304,43 @@ public final class MinecraftMania {
             function.run(context);
         }
 
-        @Override
-        void tick() {
-            super.tick();
-            final Iterator<RunningCommandFunction> it = this.functions.values().iterator();
-            while (it.hasNext()) {
-                final RunningCommandFunction func = it.next();
-                if (func.tick()) {
-                    func.stop();
-                    it.remove();
+        @SubscribeEvent
+        public void tick(final TickEvent.ClientTickEvent event) {
+            if (event.phase == TickEvent.Phase.END && !Minecraft.getInstance().isGamePaused()) {
+                final Iterator<RunningCommandFunction> it = this.functions.values().iterator();
+                while (it.hasNext()) {
+                    final RunningCommandFunction func = it.next();
+                    if (func.tick()) {
+                        func.stop();
+                        it.remove();
+                        final NewChatGui chat = Minecraft.getInstance().ingameGUI.getChatGUI();
+                        chat.deleteChatLine(this.id(func.getName()));
+                    }
                 }
             }
+        }
+
+        @SubscribeEvent
+        public void sticky(final StickyChatEvent event) {
+            for (final Map.Entry<String, RunningCommandFunction> e : this.functions.entrySet()) {
+                event.addMessage(this.id(e.getKey()), e.getValue().getMessage());
+            }
+        }
+
+        private int id(final String c) {
+            return 1 + (c.hashCode() & 0x3FFFFFFF);
+        }
+
+        @Override
+        void start() {
+            super.start();
+            MinecraftForge.EVENT_BUS.register(this);
         }
 
         @Override
         void stop() {
             super.stop();
+            MinecraftForge.EVENT_BUS.unregister(this);
             this.functions.values().forEach(RunningCommandFunction::stop);
             this.functions.clear();
         }
@@ -354,6 +376,10 @@ public final class MinecraftMania {
 
         void stop() {
             this.function.stop();
+        }
+
+        public ITextComponent getMessage() {
+            return this.function.getMessage(this.command, (this.duration - this.time) / 20);
         }
     }
 

@@ -2,9 +2,14 @@ package me.paulf.minecraftmania.function;
 
 import me.paulf.minecraftmania.MinecraftMania;
 import me.paulf.minecraftmania.RunningFunction;
+import me.paulf.minecraftmania.ViewerCommand;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.Language;
 import net.minecraft.client.resources.LanguageManager;
+import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.StringTextComponent;
+import net.minecraft.util.text.TextFormatting;
+import net.minecraft.util.text.TranslationTextComponent;
 
 import java.time.Duration;
 
@@ -19,9 +24,27 @@ public class ChangeLanguageFunction implements CommandFunction {
     }
 
     @Override
+    public ITextComponent getMessage(final MinecraftMania.Context context) {
+        final LanguageManager manager = Minecraft.getInstance().getLanguageManager();
+        final Language language = manager.getLanguage(this.language);
+        return new TranslationTextComponent(
+            "mania.lang",
+            context.getViewerName(),
+            new StringTextComponent(language == null ? "missingno" : language.getName()).applyTextStyle(TextFormatting.LIGHT_PURPLE)
+        );
+    }
+
+    @Override
     public void run(final MinecraftMania.Context context) {
         context.addRunningFunction(this.duration, new RunningFunction() {
             String originalLangCode;
+
+            @Override
+            public ITextComponent getMessage(final ViewerCommand command, final int seconds) {
+                final LanguageManager manager = Minecraft.getInstance().getLanguageManager();
+                final Language language = manager.getLanguage(ChangeLanguageFunction.this.language);
+                return new TranslationTextComponent("mania.lang.running", new StringTextComponent(language == null ? "missingno" : language.getName()).applyTextStyle(TextFormatting.LIGHT_PURPLE), seconds).applyTextStyle(TextFormatting.ITALIC);
+            }
 
             @Override
             public void start() {

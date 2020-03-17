@@ -4,5 +4,7 @@
     "mania.kill": "Viewer %1$s executed order 66",
     "mania.effect": "Viewer %1$s gave %2$s",
     "mania.time_day": "Viewer %1$s made it day",
-    "mania.time_night": "Viewer %1$s made it night"
+    "mania.time_night": "Viewer %1$s made it night",
+    "mania.lang": "Viewer %1$s changed language to %2$s",
+    "mania.lang.running": "Language is %1$s for %2$s more seconds"
 }
