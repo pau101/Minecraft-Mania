@@ -4,8 +4,6 @@ import com.google.common.primitives.Ints;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
-import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
-import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import me.paulf.minecraftmania.function.ChangeLanguageFunction;
 import me.paulf.minecraftmania.function.CommandFunction;
 import me.paulf.minecraftmania.function.DayTimeFunction;
@@ -17,8 +15,6 @@ import me.paulf.minecraftmania.function.NightTimeFunction;
 import me.paulf.minecraftmania.function.SummonFunction;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
-import net.minecraft.client.gui.IngameGui;
-import net.minecraft.client.gui.NewChatGui;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Items;
@@ -32,7 +28,6 @@ import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.ClientChatReceivedEvent;
 import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
-import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.Event;
@@ -40,16 +35,12 @@ import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.time.Duration;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 @Mod(MinecraftMania.ID)
@@ -111,26 +102,14 @@ public final class MinecraftMania {
         .add("give_diamond_hoe", new GiveFunction(Items.DIAMOND_HOE))
         .build();
 
+    private final StickyMessageHelper sticky = new StickyMessageHelper();
+
     private State state = new OutOfGameState();
 
     public MinecraftMania() {
         DistExecutor.runWhenOn(Dist.CLIENT, () -> () -> {
             final IEventBus bus = MinecraftForge.EVENT_BUS;
-            final Method ADD_MESSAGE = ObfuscationReflectionHelper.findMethod(NewChatGui.class, "func_146237_a", ITextComponent.class, int.class, int.class, boolean.class);
-            bus.<RenderGameOverlayEvent.Chat>addListener(e -> {
-                final IngameGui gui = Minecraft.getInstance().ingameGUI;
-                final NewChatGui chat = gui.getChatGUI();
-                final Int2ObjectMap<ITextComponent> messages = new Int2ObjectOpenHashMap<>();
-                final int time = gui.getTicks();
-                MinecraftForge.EVENT_BUS.post(new StickyChatEvent(messages));
-                for (final Int2ObjectMap.Entry<ITextComponent> entry : messages.int2ObjectEntrySet()) {
-                    try {
-                        ADD_MESSAGE.invoke(chat, entry.getValue(), entry.getIntKey(), time, false);
-                    } catch (final IllegalAccessException | InvocationTargetException ex) {
-                        throw new RuntimeException(ex);
-                    }
-                }
-            });
+            this.sticky.register(bus);
             bus.<ClientPlayerNetworkEvent.LoggedInEvent>addListener(e -> this.join(e.getPlayer()));
             bus.<ClientPlayerNetworkEvent.RespawnEvent>addListener(e -> this.join(e.getPlayer()));
             bus.<ClientPlayerNetworkEvent.LoggedOutEvent>addListener(e -> this.leave());
@@ -251,20 +230,6 @@ public final class MinecraftMania {
             return new StringTextComponent(this.command.getViewer()).applyTextStyle(TextFormatting.GOLD);
         }
 
-        public <E extends Event> void addRunningEventListener(final Duration duration, final Consumer<E> listener) {
-            this.addRunningFunction(duration, new RunningFunction() {
-                @Override
-                public void start() {
-                    MinecraftForge.EVENT_BUS.addListener(listener);
-                }
-
-                @Override
-                public void stop() {
-                    MinecraftForge.EVENT_BUS.unregister(listener);
-                }
-            });
-        }
-
         public <E extends Event> void addRunningFunction(final Duration duration, final RunningFunction function) {
             this.state.addRunningFunction(this.command, Ints.checkedCast(duration.getSeconds()) * 20, function);
         }
@@ -313,22 +278,9 @@ public final class MinecraftMania {
                     if (func.tick()) {
                         func.stop();
                         it.remove();
-                        final NewChatGui chat = Minecraft.getInstance().ingameGUI.getChatGUI();
-                        chat.deleteChatLine(this.id(func.getName()));
                     }
                 }
             }
-        }
-
-        @SubscribeEvent
-        public void sticky(final StickyChatEvent event) {
-            for (final Map.Entry<String, RunningCommandFunction> e : this.functions.entrySet()) {
-                event.addMessage(this.id(e.getKey()), e.getValue().getMessage());
-            }
-        }
-
-        private int id(final String c) {
-            return 1 + (c.hashCode() & 0x3FFFFFFF);
         }
 
         @Override
@@ -346,7 +298,7 @@ public final class MinecraftMania {
         }
     }
 
-    static class RunningCommandFunction {
+    class RunningCommandFunction {
         final ViewerCommand command;
         final RunningFunction function;
         int duration;
@@ -365,6 +317,7 @@ public final class MinecraftMania {
 
         boolean tick() {
             if (this.time++ < this.duration) {
+                MinecraftMania.this.sticky.add(this.id(), this.getMessage());
                 this.function.tick();
             }
             return this.time >= this.duration;
@@ -375,9 +328,15 @@ public final class MinecraftMania {
             this.function.start();
         }
 
+        private int id() {
+            // No zeros
+            return 1 | this.command.getCommand().hashCode();
+        }
+
         void stop() {
             this.function.stop();
             MinecraftForge.EVENT_BUS.unregister(this.function);
+            MinecraftMania.this.sticky.remove(this.id());
         }
 
         public ITextComponent getMessage() {
