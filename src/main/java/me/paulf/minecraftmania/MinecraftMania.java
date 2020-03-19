@@ -14,6 +14,8 @@ import me.paulf.minecraftmania.function.KillFunction;
 import me.paulf.minecraftmania.function.NightTimeFunction;
 import me.paulf.minecraftmania.function.RandomSoundPicker;
 import me.paulf.minecraftmania.function.SummonFunction;
+import me.paulf.minecraftmania.function.SwapKeyFunction;
+import net.minecraft.client.GameSettings;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
 import net.minecraft.entity.EntityType;
@@ -51,9 +53,16 @@ import java.util.function.Predicate;
 public final class MinecraftMania {
     public static final String ID = "minecraftmania";
 
+    private final GameSettings settings = Minecraft.getInstance().gameSettings;
+
     private final ViewerCommandMap map = new ViewerCommandMap.Builder()
         // Client
-        .add("disable_jump", new DisableKeyFunction(Minecraft.getInstance().gameSettings.keyBindJump, Duration.ofMinutes(2)))
+        .add("disable_forward", new DisableKeyFunction(this.settings.keyBindForward, Duration.ofMinutes(2)))
+        .add("disable_back", new DisableKeyFunction(this.settings.keyBindBack, Duration.ofMinutes(2)))
+        .add("disable_sneak", new DisableKeyFunction(this.settings.keyBindSneak, Duration.ofMinutes(2)))
+        .add("disable_jump", new DisableKeyFunction(this.settings.keyBindJump, Duration.ofMinutes(2)))
+        .add("disable_inventory", new DisableKeyFunction(this.settings.keyBindInventory, Duration.ofMinutes(2)))
+        .add("swap_forward_back", new SwapKeyFunction(this.settings.keyBindForward, this.settings.keyBindBack, Duration.ofMinutes(2)))
         .add("lang_pirate", new ChangeLanguageFunction("en_pt", Duration.ofMinutes(2)))
         .add("lang_shakespearean", new ChangeLanguageFunction("enws", Duration.ofMinutes(2)))
         .add("lang_lolcat", new ChangeLanguageFunction("lol_us", Duration.ofMinutes(2)))

@@ -1,6 +1,8 @@
 {
     "mania.key": "Viewer %1$s disabled %2$s",
     "mania.key.running": "%1$s is disabled for %2$s more seconds",
+    "mania.key_swap": "Viewer %1$s swapped %2$s and %3$s",
+    "mania.key_swap.running": "%1$s is swapped with %2$s for %3$s more seconds",
     "mania.give": "Viewer %1$s gave a %2$s",
     "mania.kill": "Viewer %1$s executed order 66",
     "mania.effect": "Viewer %1$s gave %2$s",
