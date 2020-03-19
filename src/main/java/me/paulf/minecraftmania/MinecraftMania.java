@@ -53,6 +53,7 @@ public final class MinecraftMania {
         .add("lang_pirate", new ChangeLanguageFunction("en_pt", Duration.ofMinutes(2)))
         .add("lang_shakespearean", new ChangeLanguageFunction("enws", Duration.ofMinutes(2)))
         .add("lang_lolcat", new ChangeLanguageFunction("lol_us", Duration.ofMinutes(2)))
+        .add("oink", new OinkFunction(Duration.ofMinutes(4)))
         // Misc
         .add("kill", new KillFunction())
         .add("time_day", new DayTimeFunction())
