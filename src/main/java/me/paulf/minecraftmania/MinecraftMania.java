@@ -12,6 +12,7 @@ import me.paulf.minecraftmania.function.EffectFunction;
 import me.paulf.minecraftmania.function.GiveFunction;
 import me.paulf.minecraftmania.function.KillFunction;
 import me.paulf.minecraftmania.function.NightTimeFunction;
+import me.paulf.minecraftmania.function.RandomSoundPicker;
 import me.paulf.minecraftmania.function.SummonFunction;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
@@ -19,6 +20,7 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Items;
 import net.minecraft.potion.Effects;
+import net.minecraft.util.SoundEvents;
 import net.minecraft.util.text.ChatType;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.StringTextComponent;
@@ -41,6 +43,8 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Random;
 import java.util.function.Predicate;
 
 @Mod(MinecraftMania.ID)
@@ -53,7 +57,8 @@ public final class MinecraftMania {
         .add("lang_pirate", new ChangeLanguageFunction("en_pt", Duration.ofMinutes(2)))
         .add("lang_shakespearean", new ChangeLanguageFunction("enws", Duration.ofMinutes(2)))
         .add("lang_lolcat", new ChangeLanguageFunction("lol_us", Duration.ofMinutes(2)))
-        .add("oink", new OinkFunction(Duration.ofMinutes(4)))
+        .add("oink", new SoundFunction(Duration.ofMinutes(2), () -> rl -> Optional.of(SoundEvents.ENTITY_PIG_AMBIENT)))
+        .add("chaos", new SoundFunction(Duration.ofMinutes(2), () -> new RandomSoundPicker(new Random().nextLong())))
         // Misc
         .add("kill", new KillFunction())
         .add("time_day", new DayTimeFunction())
