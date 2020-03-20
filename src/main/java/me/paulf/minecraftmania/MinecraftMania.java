@@ -13,6 +13,7 @@ import me.paulf.minecraftmania.function.GiveFunction;
 import me.paulf.minecraftmania.function.KillFunction;
 import me.paulf.minecraftmania.function.NightTimeFunction;
 import me.paulf.minecraftmania.function.RandomSoundPicker;
+import me.paulf.minecraftmania.function.PressKeyFunction;
 import me.paulf.minecraftmania.function.SummonFunction;
 import me.paulf.minecraftmania.function.SwapKeyFunction;
 import net.minecraft.client.GameSettings;
@@ -63,11 +64,16 @@ public final class MinecraftMania {
         .add("disable_jump", new DisableKeyFunction(this.settings.keyBindJump, Duration.ofMinutes(2)))
         .add("disable_inventory", new DisableKeyFunction(this.settings.keyBindInventory, Duration.ofMinutes(2)))
         .add("swap_forward_back", new SwapKeyFunction(this.settings.keyBindForward, this.settings.keyBindBack, Duration.ofMinutes(2)))
+        .add("swap_left_right", new SwapKeyFunction(this.settings.keyBindLeft, this.settings.keyBindRight, Duration.ofMinutes(2)))
+        .add("swap_jump_sneak", new SwapKeyFunction(this.settings.keyBindJump, this.settings.keyBindSneak, Duration.ofMinutes(2)))
+        .add("swap_use_attack", new SwapKeyFunction(this.settings.keyBindUseItem, this.settings.keyBindAttack, Duration.ofMinutes(2)))
+        .add("press_forward", new PressKeyFunction(this.settings.keyBindForward, Duration.ofMinutes(2)))
+        .add("press_jump", new PressKeyFunction(this.settings.keyBindJump, Duration.ofMinutes(2)))
         .add("lang_pirate", new ChangeLanguageFunction("en_pt", Duration.ofMinutes(2)))
         .add("lang_shakespearean", new ChangeLanguageFunction("enws", Duration.ofMinutes(2)))
         .add("lang_lolcat", new ChangeLanguageFunction("lol_us", Duration.ofMinutes(2)))
         .add("oink", new SoundFunction(Duration.ofMinutes(2), () -> rl -> Optional.of(SoundEvents.ENTITY_PIG_AMBIENT)))
-        .add("chaos", new SoundFunction(Duration.ofMinutes(2), () -> new RandomSoundPicker(new Random().nextLong())))
+        .add("ruckus", new SoundFunction(Duration.ofMinutes(2), () -> new RandomSoundPicker(new Random().nextLong())))
         // Misc
         .add("kill", new KillFunction())
         .add("time_day", new DayTimeFunction())
