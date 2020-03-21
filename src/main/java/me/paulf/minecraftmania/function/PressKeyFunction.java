@@ -12,14 +12,12 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 import java.time.Duration;
 
-public class PressKeyFunction implements CommandFunction {
+public class PressKeyFunction extends DurationFunction {
     private final KeyBinding key;
 
-    private final Duration duration;
-
     public PressKeyFunction(final KeyBinding key, final Duration duration) {
+        super(duration);
         this.key = key;
-        this.duration = duration;
     }
 
     @Override
@@ -32,9 +30,9 @@ public class PressKeyFunction implements CommandFunction {
     }
 
     @Override
-    public void run(final MinecraftMania.Context context) {
+    protected RunningFunction createFunction() {
         final KeyBinding key = this.key;
-        context.addRunningFunction(this.duration, new RunningFunction() {
+        return new RunningFunction() {
             @Override
             public ITextComponent getMessage(final ViewerCommand command, final int seconds) {
                 return new TranslationTextComponent("mania.press_key.running", PressKeyFunction.this.getKeyName(), seconds).applyTextStyle(TextFormatting.ITALIC);
@@ -46,6 +44,6 @@ public class PressKeyFunction implements CommandFunction {
                     key.setPressed(true);
                 }
             }
-        });
+        };
     }
 }

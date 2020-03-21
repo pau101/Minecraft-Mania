@@ -12,8 +12,8 @@ import me.paulf.minecraftmania.function.EffectFunction;
 import me.paulf.minecraftmania.function.GiveFunction;
 import me.paulf.minecraftmania.function.KillFunction;
 import me.paulf.minecraftmania.function.NightTimeFunction;
-import me.paulf.minecraftmania.function.RandomSoundPicker;
 import me.paulf.minecraftmania.function.PressKeyFunction;
+import me.paulf.minecraftmania.function.RandomSoundPicker;
 import me.paulf.minecraftmania.function.SummonFunction;
 import me.paulf.minecraftmania.function.SwapKeyFunction;
 import net.minecraft.client.GameSettings;
@@ -276,6 +276,7 @@ public final class MinecraftMania {
                     func.start();
                     return func;
                 } else {
+                    v.function.merge();
                     v.duration += ticks;
                     return v;
                 }

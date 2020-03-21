@@ -13,14 +13,12 @@ import net.minecraft.util.text.TranslationTextComponent;
 
 import java.time.Duration;
 
-public class ChangeLanguageFunction implements CommandFunction {
+public class ChangeLanguageFunction extends DurationFunction {
     private final String language;
 
-    private final Duration duration;
-
     public ChangeLanguageFunction(final String language, final Duration duration) {
+        super(duration);
         this.language = language;
-        this.duration = duration;
     }
 
     @Override
@@ -35,8 +33,8 @@ public class ChangeLanguageFunction implements CommandFunction {
     }
 
     @Override
-    public void run(final MinecraftMania.Context context) {
-        context.addRunningFunction(this.duration, new RunningFunction() {
+    protected RunningFunction createFunction() {
+        return new RunningFunction() {
             String originalLangCode;
 
             @Override
@@ -88,6 +86,6 @@ public class ChangeLanguageFunction implements CommandFunction {
                 }
                 return null;
             }
-        });
+        };
     }
 }

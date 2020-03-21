@@ -13,17 +13,15 @@ import net.minecraftforge.client.settings.KeyModifier;
 
 import java.time.Duration;
 
-public class SwapKeyFunction implements CommandFunction {
+public class SwapKeyFunction extends DurationFunction {
     private final KeyBinding first;
 
     private final KeyBinding second;
 
-    private final Duration duration;
-
     public SwapKeyFunction(final KeyBinding first, final KeyBinding second, final Duration duration) {
+        super(duration);
         this.first = first;
         this.second = second;
-        this.duration = duration;
     }
 
     @Override
@@ -36,14 +34,14 @@ public class SwapKeyFunction implements CommandFunction {
     }
 
     @Override
-    public void run(final MinecraftMania.Context context) {
+    protected RunningFunction createFunction() {
         final KeyBinding first = this.first;
         final KeyBinding second = this.second;
         final InputMappings.Input firstInput = first.getKey();
         final InputMappings.Input secondInput = second.getKey();
         final KeyModifier firstModifier = first.getKeyModifier();
         final KeyModifier secondModifier = second.getKeyModifier();
-        context.addRunningFunction(this.duration, new RunningFunction() {
+        return new RunningFunction() {
             @Override
             public ITextComponent getMessage(final ViewerCommand command, final int seconds) {
                 return new TranslationTextComponent("mania.key_swap.running", SwapKeyFunction.this.getKeyName(first), SwapKeyFunction.this.getKeyName(second), seconds).applyTextStyle(TextFormatting.ITALIC);
@@ -72,6 +70,6 @@ public class SwapKeyFunction implements CommandFunction {
                 Minecraft.getInstance().gameSettings.saveOptions();
                 KeyBinding.resetKeyBindingArrayAndHash();
             }
-        });
+        };
     }
 }

@@ -27,14 +27,22 @@ public class SoundFunction implements CommandFunction {
 
     @Override
     public void run(final MinecraftMania.Context context) {
-        context.addRunningFunction(this.duration, new MyRunningFunction(this.sound.get()));
+        context.addRunningFunction(this.duration, new MyRunningFunction(this.sound));
     }
 
     private static final class MyRunningFunction implements RunningFunction {
-        private final Function<ResourceLocation, Optional<SoundEvent>> factory;
+        private final Supplier<Function<ResourceLocation, Optional<SoundEvent>>> sound;
 
-        private MyRunningFunction(final Function<ResourceLocation, Optional<SoundEvent>> factory) {
-            this.factory = factory;
+        private Function<ResourceLocation, Optional<SoundEvent>> factory;
+
+        private MyRunningFunction(final Supplier<Function<ResourceLocation, Optional<SoundEvent>>> sound) {
+            this.sound = sound;
+            this.factory = sound.get();
+        }
+
+        @Override
+        public void merge() {
+            this.factory = this.sound.get();
         }
 
         @SubscribeEvent
