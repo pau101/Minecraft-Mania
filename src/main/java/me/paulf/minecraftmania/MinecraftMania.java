@@ -23,6 +23,12 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Items;
 import net.minecraft.potion.Effects;
+import net.minecraft.resources.FolderPack;
+import net.minecraft.resources.IPackFinder;
+import net.minecraft.resources.ResourcePackInfo;
+import net.minecraft.resources.data.IMetadataSectionSerializer;
+import net.minecraft.resources.data.PackMetadataSection;
+import net.minecraft.util.SharedConstants;
 import net.minecraft.util.SoundEvents;
 import net.minecraft.util.text.ChatType;
 import net.minecraft.util.text.ITextComponent;
@@ -41,6 +47,8 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.common.Mod;
 
+import javax.annotation.Nullable;
+import java.io.IOException;
 import java.time.Duration;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -129,8 +137,31 @@ public final class MinecraftMania {
 
     public MinecraftMania() {
         DistExecutor.runWhenOn(Dist.CLIENT, () -> () -> {
+            Minecraft.getInstance().getResourcePackList().addPackFinder(new IPackFinder() {
+                @Override
+                public <T extends ResourcePackInfo> void addPackInfosToMap(final Map<String, T> map, final ResourcePackInfo.IFactory<T> factory) {
+                    final T t = ResourcePackInfo.createResourcePack("sources", true, () -> new FolderPack(LiveEdit.getRoot().toFile()) {
+                        final PackMetadataSection pack = new PackMetadataSection(new StringTextComponent("Sources"), SharedConstants.getVersion().getPackVersion());
+
+                        @SuppressWarnings("unchecked")
+                        @Nullable
+                        @Override
+                        public <S> S getMetadata(final IMetadataSectionSerializer<S> deserializer) throws IOException {
+                            if (deserializer.getSectionName().equals("pack")) {
+                                return (S) this.pack;
+                            }
+                            return super.getMetadata(deserializer);
+                        }
+                    }, factory, ResourcePackInfo.Priority.BOTTOM);
+                    if (t != null) {
+                        map.put("sources", t);
+                    }
+                }
+            });
             final IEventBus bus = MinecraftForge.EVENT_BUS;
             this.sticky.register(bus);
+            bus.register(new ShaderPostProcessing());
+            //bus.register(new PostProcess());
             bus.<ClientPlayerNetworkEvent.LoggedInEvent>addListener(e -> this.join(e.getPlayer()));
             bus.<ClientPlayerNetworkEvent.RespawnEvent>addListener(e -> this.join(e.getPlayer()));
             bus.<ClientPlayerNetworkEvent.LoggedOutEvent>addListener(e -> this.leave());
