@@ -160,7 +160,7 @@ public final class MinecraftMania {
             });
             final IEventBus bus = MinecraftForge.EVENT_BUS;
             this.sticky.register(bus);
-            bus.register(new ShaderPostProcessing());
+            Minecraft.getInstance().enqueue(() -> bus.register(new ShaderPostProcessing()));
             //bus.register(new PostProcess());
             bus.<ClientPlayerNetworkEvent.LoggedInEvent>addListener(e -> this.join(e.getPlayer()));
             bus.<ClientPlayerNetworkEvent.RespawnEvent>addListener(e -> this.join(e.getPlayer()));
