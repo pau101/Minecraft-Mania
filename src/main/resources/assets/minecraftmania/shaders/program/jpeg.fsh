@@ -12,6 +12,7 @@ varying vec2 oneTexel;
 
 float m[64];
 
+// https://unix4lyfe.org/dct/listing3.c
 void dct(int p[64], vec2 pos) {
     int i;
     int rows[64];
