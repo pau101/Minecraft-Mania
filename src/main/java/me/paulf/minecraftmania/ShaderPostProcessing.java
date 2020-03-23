@@ -14,8 +14,8 @@ public final class ShaderPostProcessing {
     private final PostProcessingEffect effect;
 
     public ShaderPostProcessing() {
-        LiveEdit.instance().watch(new ResourceLocation(MinecraftMania.ID, "shaders/program/jpeg.fsh"), this::load);
         this.effect = new PostProcessingEffect(SHADER_LOCATION);
+        LiveEdit.instance().watch(new ResourceLocation(MinecraftMania.ID, "shaders/program/jpeg.fsh"), this::load);
     }
 
     @SubscribeEvent
