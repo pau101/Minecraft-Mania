@@ -217,8 +217,6 @@ int blue[64];
 void main() {
     vec2 block = floor(texCoord * InSize / 8) * 8;
     vec2 pos = floor(mod(texCoord * InSize, 8));
-//    vec2 block = floor(texCoord * InSize / 8) * 8;
-//    vec2 pos = floor(mod(texCoord * InSize, 8));
     for (int y = 0; y < 8; y++) {
         for (int x = 0; x < 8; x++) {
             vec3 color = rgb_to_ycbcr(texture2D(DiffuseSampler, (block + vec2(x, y)) / InSize).rgb) * 255.0;
