@@ -15,7 +15,38 @@ import org.apache.logging.log4j.LogManager;
 import org.lwjgl.openal.AL10;
 import org.lwjgl.openal.AL11;
 
-import static org.lwjgl.openal.EXTEfx.*;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
+
+import static org.lwjgl.openal.EXTEfx.AL_AUXILIARY_SEND_FILTER;
+import static org.lwjgl.openal.EXTEfx.AL_DISTORTION_EDGE;
+import static org.lwjgl.openal.EXTEfx.AL_DISTORTION_GAIN;
+import static org.lwjgl.openal.EXTEfx.AL_DISTORTION_LOWPASS_CUTOFF;
+import static org.lwjgl.openal.EXTEfx.AL_EFFECTSLOT_EFFECT;
+import static org.lwjgl.openal.EXTEfx.AL_EFFECT_AUTOWAH;
+import static org.lwjgl.openal.EXTEfx.AL_EFFECT_CHORUS;
+import static org.lwjgl.openal.EXTEfx.AL_EFFECT_COMPRESSOR;
+import static org.lwjgl.openal.EXTEfx.AL_EFFECT_DISTORTION;
+import static org.lwjgl.openal.EXTEfx.AL_EFFECT_EAXREVERB;
+import static org.lwjgl.openal.EXTEfx.AL_EFFECT_ECHO;
+import static org.lwjgl.openal.EXTEfx.AL_EFFECT_EQUALIZER;
+import static org.lwjgl.openal.EXTEfx.AL_EFFECT_FLANGER;
+import static org.lwjgl.openal.EXTEfx.AL_EFFECT_FREQUENCY_SHIFTER;
+import static org.lwjgl.openal.EXTEfx.AL_EFFECT_NULL;
+import static org.lwjgl.openal.EXTEfx.AL_EFFECT_PITCH_SHIFTER;
+import static org.lwjgl.openal.EXTEfx.AL_EFFECT_REVERB;
+import static org.lwjgl.openal.EXTEfx.AL_EFFECT_RING_MODULATOR;
+import static org.lwjgl.openal.EXTEfx.AL_EFFECT_TYPE;
+import static org.lwjgl.openal.EXTEfx.AL_EFFECT_VOCAL_MORPHER;
+import static org.lwjgl.openal.EXTEfx.AL_FILTER_NULL;
+import static org.lwjgl.openal.EXTEfx.AL_PITCH_SHIFTER_COARSE_TUNE;
+import static org.lwjgl.openal.EXTEfx.alAuxiliaryEffectSloti;
+import static org.lwjgl.openal.EXTEfx.alDeleteAuxiliaryEffectSlots;
+import static org.lwjgl.openal.EXTEfx.alDeleteEffects;
+import static org.lwjgl.openal.EXTEfx.alEffectf;
+import static org.lwjgl.openal.EXTEfx.alEffecti;
+import static org.lwjgl.openal.EXTEfx.alGenAuxiliaryEffectSlots;
+import static org.lwjgl.openal.EXTEfx.alGenEffects;
 
 public class SoundFun {
     private int effectSlot = 0;

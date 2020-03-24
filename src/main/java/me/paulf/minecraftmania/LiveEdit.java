@@ -12,9 +12,15 @@ import net.minecraft.client.renderer.texture.NativeImage;
 import net.minecraft.client.renderer.texture.Texture;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.client.renderer.texture.TextureUtil;
+import net.minecraft.resources.FolderPack;
+import net.minecraft.resources.IPackFinder;
 import net.minecraft.resources.IResourceManager;
+import net.minecraft.resources.ResourcePackInfo;
+import net.minecraft.resources.data.IMetadataSectionSerializer;
+import net.minecraft.resources.data.PackMetadataSection;
 import net.minecraft.util.ResourceLocation;
-import org.apache.logging.log4j.Level;
+import net.minecraft.util.SharedConstants;
+import net.minecraft.util.text.StringTextComponent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -43,10 +49,33 @@ public final class LiveEdit {
 
 	private static final Logger LOGGER = LogManager.getLogger();
 
-	private final Path root = this.getRoot();
+	private final Path root = getRoot();
 
-	@Nullable
-	private Refresher refresher;
+	private final Refresher refresher = this.createRefresher();
+
+	public void init() {
+		Minecraft.getInstance().getResourcePackList().addPackFinder(new IPackFinder() {
+			@Override
+			public <T extends ResourcePackInfo> void addPackInfosToMap(final Map<String, T> map, final ResourcePackInfo.IFactory<T> factory) {
+				final T t = ResourcePackInfo.createResourcePack("sources", true, () -> new FolderPack(LiveEdit.getRoot().toFile()) {
+					final PackMetadataSection pack = new PackMetadataSection(new StringTextComponent("Sources"), SharedConstants.getVersion().getPackVersion());
+
+					@SuppressWarnings("unchecked")
+					@Nullable
+					@Override
+					public <S> S getMetadata(final IMetadataSectionSerializer<S> deserializer) throws IOException {
+						if (deserializer.getSectionName().equals("pack")) {
+							return (S) this.pack;
+						}
+						return super.getMetadata(deserializer);
+					}
+				}, factory, ResourcePackInfo.Priority.BOTTOM);
+				if (t != null) {
+					map.put("sources", t);
+				}
+			}
+		});
+	}
 
 	public void bind(final ResourceLocation resource) {
 		this.load(resource).bindTexture(resource);
@@ -62,7 +91,7 @@ public final class LiveEdit {
 	}
 
 	public void watch(final ResourceLocation resource, final Runnable callback) {
-		this.getRefresher().watch(this.getPath(resource), callback);
+		this.refresher.watch(this.getPath(resource), callback);
 	}
 
 	private TextureManager load(final ResourceLocation resource) {
@@ -73,20 +102,13 @@ public final class LiveEdit {
 		if (textureManager.getTexture(resource) == null) {
 			final LiveTexture tex = new LiveTexture(resource, this.getPath(resource));
 			tex.load(textureManager);
-			this.getRefresher().watch(tex.getFile(), () -> tex.load(Minecraft.getInstance().getTextureManager()));
+			this.refresher.watch(tex.getFile(), () -> tex.load(Minecraft.getInstance().getTextureManager()));
 		}
 		return textureManager;
 	}
 
 	private Path getPath(final ResourceLocation resource) {
 		return this.root.resolve(Paths.get("assets", resource.getNamespace(), resource.getPath()));
-	}
-
-	private Refresher getRefresher() {
-		if (this.refresher == null) {
-			this.refresher = this.createRefresher();
-		}
-		return this.refresher;
 	}
 
 	private Refresher createRefresher() {
@@ -97,7 +119,7 @@ public final class LiveEdit {
 			refresher.start();
 			return refresher;
 		} catch (final Exception e) {
-			LOGGER.log(Level.ERROR, "Unable to construct refresher, textures will not refresh", new Object[]{e});
+			LOGGER.error("Unable to construct refresher, textures will not refresh", e);
 			return Refresher.NULL;
 		}
 	}
@@ -191,7 +213,7 @@ public final class LiveEdit {
 				this.keys.put(this.directories.computeIfAbsent(directory, this::register), behavior);
 				return true;
 			} catch (final UncheckedIOException e) {
-				LOGGER.log(Level.WARN, "Skipping registration of \"{}\"", new Object[]{directory, e});
+				LOGGER.warn("Skipping registration of \"{}\"", directory, e);
 			}
 			return false;
 		}
@@ -213,9 +235,9 @@ public final class LiveEdit {
 			}
 			if (canWatch) {
 				this.textures.put(file, callback);
-				LOGGER.log(Level.INFO, "Started watching \"{}\"", file);
+				LOGGER.info("Started watching \"{}\"", file);
 			} else {
-				LOGGER.log(Level.WARN, "Unable to watch \"{}\"", file);
+				LOGGER.warn("Unable to watch \"{}\"", file);
 			}
 		}
 
@@ -274,7 +296,7 @@ public final class LiveEdit {
 					fail = !LiveRefresher.this.watch(parent, new RecaptureDirectoryBehavior(parent, this.directory.getFileName(), this));
 				}
 				if (fail) {
-					LOGGER.log(Level.WARN, "Unable to watch for return of \"{}\"", new Object[]{this.directory});
+					LOGGER.warn("Unable to watch for return of \"{}\"", this.directory);
 				}
 			}
 		}

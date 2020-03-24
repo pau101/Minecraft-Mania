@@ -16,6 +16,7 @@ import me.paulf.minecraftmania.function.PressKeyFunction;
 import me.paulf.minecraftmania.function.RandomSoundPicker;
 import me.paulf.minecraftmania.function.SummonFunction;
 import me.paulf.minecraftmania.function.SwapKeyFunction;
+import me.paulf.minecraftmania.function.VibratoFunction;
 import net.minecraft.client.GameSettings;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
@@ -23,12 +24,6 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Items;
 import net.minecraft.potion.Effects;
-import net.minecraft.resources.FolderPack;
-import net.minecraft.resources.IPackFinder;
-import net.minecraft.resources.ResourcePackInfo;
-import net.minecraft.resources.data.IMetadataSectionSerializer;
-import net.minecraft.resources.data.PackMetadataSection;
-import net.minecraft.util.SharedConstants;
 import net.minecraft.util.SoundEvents;
 import net.minecraft.util.text.ChatType;
 import net.minecraft.util.text.ITextComponent;
@@ -47,8 +42,6 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.common.Mod;
 
-import javax.annotation.Nullable;
-import java.io.IOException;
 import java.time.Duration;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -82,6 +75,7 @@ public final class MinecraftMania {
         .add("lang_lolcat", new ChangeLanguageFunction("lol_us", Duration.ofMinutes(2)))
         .add("oink", new SoundFunction(Duration.ofMinutes(2), () -> rl -> Optional.of(SoundEvents.ENTITY_PIG_AMBIENT)))
         .add("ruckus", new SoundFunction(Duration.ofMinutes(2), () -> new RandomSoundPicker(new Random().nextLong())))
+        .add("vibrato", new VibratoFunction(Duration.ofMinutes(2)))
         // Misc
         .add("kill", new KillFunction())
         .add("time_day", new DayTimeFunction())
@@ -137,30 +131,10 @@ public final class MinecraftMania {
 
     public MinecraftMania() {
         DistExecutor.runWhenOn(Dist.CLIENT, () -> () -> {
-            Minecraft.getInstance().getResourcePackList().addPackFinder(new IPackFinder() {
-                @Override
-                public <T extends ResourcePackInfo> void addPackInfosToMap(final Map<String, T> map, final ResourcePackInfo.IFactory<T> factory) {
-                    final T t = ResourcePackInfo.createResourcePack("sources", true, () -> new FolderPack(LiveEdit.getRoot().toFile()) {
-                        final PackMetadataSection pack = new PackMetadataSection(new StringTextComponent("Sources"), SharedConstants.getVersion().getPackVersion());
-
-                        @SuppressWarnings("unchecked")
-                        @Nullable
-                        @Override
-                        public <S> S getMetadata(final IMetadataSectionSerializer<S> deserializer) throws IOException {
-                            if (deserializer.getSectionName().equals("pack")) {
-                                return (S) this.pack;
-                            }
-                            return super.getMetadata(deserializer);
-                        }
-                    }, factory, ResourcePackInfo.Priority.BOTTOM);
-                    if (t != null) {
-                        map.put("sources", t);
-                    }
-                }
-            });
+            //LiveEdit.instance().init();
             final IEventBus bus = MinecraftForge.EVENT_BUS;
             this.sticky.register(bus);
-            Minecraft.getInstance().enqueue(() -> bus.register(new ShaderPostProcessing()));
+            //Minecraft.getInstance().enqueue(() -> bus.register(new ShaderPostProcessing()));
             //bus.register(new PostProcess());
             bus.<ClientPlayerNetworkEvent.LoggedInEvent>addListener(e -> this.join(e.getPlayer()));
             bus.<ClientPlayerNetworkEvent.RespawnEvent>addListener(e -> this.join(e.getPlayer()));

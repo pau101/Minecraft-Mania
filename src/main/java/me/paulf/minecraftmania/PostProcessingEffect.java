@@ -83,8 +83,9 @@ public class PostProcessingEffect {
 
         @Override
         State render(final float delta) {
-            final int w = Minecraft.getInstance().getMainWindow().getFramebufferWidth();
-            final int h = Minecraft.getInstance().getMainWindow().getFramebufferHeight();
+            final MainWindow win = Minecraft.getInstance().getMainWindow();
+            final int w = win.getFramebufferWidth();
+            final int h = win.getFramebufferHeight();
             if (w != this.w || h != this.h) {
                 this.shader.createBindFramebuffers(w, h);
                 this.w = w;

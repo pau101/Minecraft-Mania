@@ -1,6 +1,8 @@
 #version 120
 
 #define PI 3.14159265358979
+#define QUALITY 10
+#define TERMS 4
 
 uniform sampler2D DiffuseSampler;
 uniform vec2 InSize;
@@ -12,7 +14,7 @@ varying vec2 oneTexel;
 float m[64];
 
 // https://unix4lyfe.org/dct/listing3.c
-void dct(int p[64], vec2 pos) {
+void dct(int p[64]) {
     int i;
     int rows[64];
 
@@ -82,7 +84,7 @@ void dct(int p[64], vec2 pos) {
     }
 
     /* transform columns */
-    for (i = 0; i < 8; i++) {
+    for (i = 0; i < TERMS; i++) {
         x0 = rows[0*8+i];
         x1 = rows[1*8+i];
         x2 = rows[2*8+i];
@@ -137,8 +139,6 @@ void dct(int p[64], vec2 pos) {
     }
 }
 
-#define N 8
-
 const int LUM_Q[64] = int[] (
     16, 11, 10, 16,  24,  40,  51,  61,
     12, 12, 14, 19,  26,  58,  60,  55,
@@ -161,25 +161,19 @@ const int CHROMA_Q[64] = int[] (
     99, 99, 99, 99, 99, 99, 99, 99
 );
 
-#define QUALITY 10
-
-#define quantize(Q) { \
-    for (int y = 0; y < 8; y++) { \
-        for (int x = 0; x < 8; x++) { \
-            if (x < N && y < N) { \
-                int q = (50 + Q[y*8+x] * (QUALITY >= 50 ? 200 - 2 * QUALITY : 5000 / QUALITY)) / 100; \
-                m[y*8+x] = floor(m[y*8+x] / q + 0.5) * q; \
-            } else { \
-                m[y*8+x] = 0.0; \
-            } \
+#define QUANTIZE(Q) { \
+    for (int y = 0; y < TERMS; y++) { \
+        for (int x = 0; x < TERMS; x++) { \
+            int q = (50 + Q[y*8+x] * (QUALITY >= 50 ? 200 - 2 * QUALITY : 5000 / QUALITY)) / 100; \
+            m[y*8+x] = floor(m[y*8+x] / q + 0.5) * q; \
         } \
     } \
 }
 
 float idct(vec2 pos) {
     float z = 0.0;
-    for (int u = 0; u < N; u++) {
-        for (int v = 0; v < N; v++) {
+    for (int u = 0; u < TERMS; u++) {
+        for (int v = 0; v < TERMS; v++) {
             float Cu = u == 0 ? 1.0 / sqrt(2.0) : 1.0;
             float Cv = v == 0 ? 1.0 / sqrt(2.0) : 1.0;
             float S = m[v*8+u];
@@ -209,7 +203,6 @@ vec3 ycbcr_to_rgb(vec3 ycbcr) {
     );
 }
 
-
 int red[64];
 int green[64];
 int blue[64];
@@ -217,22 +210,22 @@ int blue[64];
 void main() {
     vec2 block = floor(texCoord * InSize / 8) * 8;
     vec2 pos = floor(mod(texCoord * InSize, 8));
-    for (int y = 0; y < 8; y++) {
-        for (int x = 0; x < 8; x++) {
-            vec3 color = rgb_to_ycbcr(texture2D(DiffuseSampler, (block + vec2(x, y)) / InSize).rgb) * 255.0;
+    for (int x = 0; x < 8; x++) {
+        for (int y = 0; y < 8; y++) {
+            vec3 color = rgb_to_ycbcr(texture2D(DiffuseSampler, (block + vec2(x + 0.5, y + 0.5)) / InSize).rgb) * 255.0;
             red[x+y*8] = int(color.r);
             green[x+y*8] = int(color.g);
             blue[x+y*8] = int(color.b);
         }
     }
-    dct(red, block);
-    quantize(LUM_Q);
+    dct(red);
+    QUANTIZE(LUM_Q);
     float r = idct(pos);
-    dct(green, block);
-    quantize(CHROMA_Q);
+    dct(green);
+    QUANTIZE(CHROMA_Q);
     float g = idct(pos);
-    dct(blue, block);
-    quantize(CHROMA_Q);
+    dct(blue);
+    QUANTIZE(CHROMA_Q);
     float b = idct(pos);
     gl_FragColor = vec4(ycbcr_to_rgb(vec3(r, g, b)), 1.0);
 }
