@@ -10,6 +10,7 @@ import me.paulf.minecraftmania.function.DayTimeFunction;
 import me.paulf.minecraftmania.function.DisableKeyFunction;
 import me.paulf.minecraftmania.function.EffectFunction;
 import me.paulf.minecraftmania.function.GiveFunction;
+import me.paulf.minecraftmania.function.JpegFunction;
 import me.paulf.minecraftmania.function.KillFunction;
 import me.paulf.minecraftmania.function.NightTimeFunction;
 import me.paulf.minecraftmania.function.PressKeyFunction;
@@ -76,6 +77,7 @@ public final class MinecraftMania {
         .add("oink", new SoundFunction(Duration.ofMinutes(2), () -> rl -> Optional.of(SoundEvents.ENTITY_PIG_AMBIENT)))
         .add("ruckus", new SoundFunction(Duration.ofMinutes(2), () -> new RandomSoundPicker(new Random().nextLong())))
         .add("vibrato", new VibratoFunction(Duration.ofMinutes(2)))
+        .add("jpeg", new JpegFunction(Duration.ofMinutes(2)))
         // Misc
         .add("kill", new KillFunction())
         .add("time_day", new DayTimeFunction())

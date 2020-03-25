@@ -11,7 +11,7 @@ import org.lwjgl.opengl.GL11;
 
 import java.io.IOException;
 
-public class PostProcessingEffect {
+public class PostProcessingEffect implements AutoCloseable {
     private final ResourceLocation location;
 
     private State state;
@@ -30,6 +30,11 @@ public class PostProcessingEffect {
         this.state = this.state.render(delta);
     }
 
+    @Override
+    public void close() {
+        this.state = this.state.close();
+    }
+
     abstract static class State {
         State reload(final ResourceLocation location) {
             final Minecraft mc = Minecraft.getInstance();
@@ -44,6 +49,10 @@ public class PostProcessingEffect {
 
         State render(final float delta) {
             return this;
+        }
+
+        State close() {
+            return new UnloadedState();
         }
     }
 
@@ -109,6 +118,12 @@ public class PostProcessingEffect {
         State reload(final ResourceLocation location) {
             this.shader.close();
             return super.reload(location);
+        }
+
+        @Override
+        State close() {
+            this.shader.close();
+            return super.close();
         }
     }
 }

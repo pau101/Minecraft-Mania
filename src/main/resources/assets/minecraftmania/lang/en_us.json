@@ -15,5 +15,9 @@
     "mania.oink": "Viewer %1$s brought the oinks",
     "mania.oink.running": "Oinks for %1$s more seconds",
     "mania.ruckus": "Viewer %1$s brought ruckus",
-    "mania.ruckus.running": "Ruckus for %1$s more seconds"
+    "mania.ruckus.running": "Ruckus for %1$s more seconds",
+    "mania.jpeg": "Viewer %1$s needed more jpeg",
+    "mania.jpeg.running": "More jpeg for %1$s more seconds",
+    "mania.vibrato": "Viewer %1$s turned on vibrato",
+    "mania.vibrato.running": "Vibrato for %1$s more seconds"
 }
