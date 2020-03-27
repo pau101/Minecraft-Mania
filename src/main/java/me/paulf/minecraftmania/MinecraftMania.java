@@ -10,7 +10,7 @@ import me.paulf.minecraftmania.function.DayTimeFunction;
 import me.paulf.minecraftmania.function.DisableKeyFunction;
 import me.paulf.minecraftmania.function.EffectFunction;
 import me.paulf.minecraftmania.function.GiveFunction;
-import me.paulf.minecraftmania.function.JpegFunction;
+import me.paulf.minecraftmania.function.PostProcessingFunction;
 import me.paulf.minecraftmania.function.KillFunction;
 import me.paulf.minecraftmania.function.NightTimeFunction;
 import me.paulf.minecraftmania.function.PressKeyFunction;
@@ -25,6 +25,7 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Items;
 import net.minecraft.potion.Effects;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.SoundEvents;
 import net.minecraft.util.text.ChatType;
 import net.minecraft.util.text.ITextComponent;
@@ -77,7 +78,8 @@ public final class MinecraftMania {
         .add("oink", new SoundFunction(Duration.ofMinutes(2), () -> rl -> Optional.of(SoundEvents.ENTITY_PIG_AMBIENT)))
         .add("ruckus", new SoundFunction(Duration.ofMinutes(2), () -> new RandomSoundPicker(new Random().nextLong())))
         .add("vibrato", new VibratoFunction(Duration.ofMinutes(2)))
-        .add("jpeg", new JpegFunction(Duration.ofMinutes(2)))
+        .add("jpeg", new PostProcessingFunction(new ResourceLocation(MinecraftMania.ID, "shaders/post/jpeg.json"), Duration.ofMinutes(2)))
+        .add("desaturate", new PostProcessingFunction(new ResourceLocation("shaders/post/desaturate.json"), Duration.ofMinutes(2)))
         // Misc
         .add("kill", new KillFunction())
         .add("time_day", new DayTimeFunction())

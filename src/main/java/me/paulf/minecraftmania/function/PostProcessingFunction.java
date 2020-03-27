@@ -1,6 +1,5 @@
 package me.paulf.minecraftmania.function;
 
-import me.paulf.minecraftmania.MinecraftMania;
 import me.paulf.minecraftmania.PostProcessingEffect;
 import me.paulf.minecraftmania.RunningFunction;
 import net.minecraft.util.ResourceLocation;
@@ -9,15 +8,19 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 import java.time.Duration;
 
-public class JpegFunction extends DurationFunction {
-    public JpegFunction(final Duration duration) {
+public class PostProcessingFunction extends DurationFunction {
+    private final ResourceLocation shader;
+
+    public PostProcessingFunction(final ResourceLocation shader, final Duration duration) {
         super(duration);
+        this.shader = shader;
     }
 
     @Override
     protected RunningFunction createFunction() {
+        final ResourceLocation shader = this.shader;
         return new RunningFunction() {
-            final PostProcessingEffect effect = new PostProcessingEffect(new ResourceLocation(MinecraftMania.ID, "shaders/post/jpeg.json"));
+            final PostProcessingEffect effect = new PostProcessingEffect(shader);
 
             @SubscribeEvent
             public void render(final TickEvent.RenderTickEvent e) {
