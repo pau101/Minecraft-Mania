@@ -1,8 +1,8 @@
 #version 120
 
-#define PI 3.14159265358979
-#define QUALITY 10
-#define TERMS 4
+const float PI = 3.1415926535;
+const int QUALITY = 10;
+const int TERMS = 4;
 
 uniform sampler2D DiffuseSampler;
 uniform vec2 InSize;

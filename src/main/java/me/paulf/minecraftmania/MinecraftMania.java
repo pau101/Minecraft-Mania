@@ -79,6 +79,7 @@ public final class MinecraftMania {
         .add("ruckus", new SoundFunction(Duration.ofMinutes(2), () -> new RandomSoundPicker(new Random().nextLong())))
         .add("vibrato", new VibratoFunction(Duration.ofMinutes(2)))
         .add("jpeg", new PostProcessingFunction(new ResourceLocation(MinecraftMania.ID, "shaders/post/jpeg.json"), Duration.ofMinutes(2)))
+        .add("rgb", new PostProcessingFunction(new ResourceLocation(MinecraftMania.ID, "shaders/post/rgb.json"), Duration.ofMinutes(2)))
         .add("desaturate", new PostProcessingFunction(new ResourceLocation("shaders/post/desaturate.json"), Duration.ofMinutes(2)))
         // Misc
         .add("kill", new KillFunction())
@@ -138,8 +139,6 @@ public final class MinecraftMania {
             //LiveEdit.instance().init();
             final IEventBus bus = MinecraftForge.EVENT_BUS;
             this.sticky.register(bus);
-            //Minecraft.getInstance().enqueue(() -> bus.register(new ShaderPostProcessing()));
-            //bus.register(new PostProcess());
             bus.<ClientPlayerNetworkEvent.LoggedInEvent>addListener(e -> this.join(e.getPlayer()));
             bus.<ClientPlayerNetworkEvent.RespawnEvent>addListener(e -> this.join(e.getPlayer()));
             bus.<ClientPlayerNetworkEvent.LoggedOutEvent>addListener(e -> this.leave());

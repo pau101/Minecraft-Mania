@@ -16,22 +16,20 @@ public class PostProcessingFunction extends DurationFunction {
         this.shader = shader;
     }
 
+    private PostProcessingEffect effect;
+
     @Override
     protected RunningFunction createFunction() {
-        final ResourceLocation shader = this.shader;
+        if (this.effect == null) {
+            this.effect = new PostProcessingEffect(this.shader);
+            //LiveEdit.instance().watch(new ResourceLocation(MinecraftMania.ID, "shaders/program"), this.effect::reload);
+        }
         return new RunningFunction() {
-            final PostProcessingEffect effect = new PostProcessingEffect(shader);
-
             @SubscribeEvent
             public void render(final TickEvent.RenderTickEvent e) {
                 if (e.phase == TickEvent.Phase.END) {
-                    this.effect.render(e.renderTickTime);
+                    PostProcessingFunction.this.effect.render(e.renderTickTime);
                 }
-            }
-
-            @Override
-            public void stop() {
-                this.effect.close();
             }
         };
     }
