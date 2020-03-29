@@ -11,6 +11,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nullable;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CodingErrorAction;
 import java.util.concurrent.TimeUnit;
 
 public final class OkHttpSocketTest {
@@ -25,6 +30,21 @@ public final class OkHttpSocketTest {
             .build();
         client.newWebSocket(request, new MyListener());
         MoreExecutors.shutdownAndAwaitTermination(client.dispatcher().executorService(), Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+    }
+
+    // https://blog.jakubholy.net/2007/11/02/truncating-utf-string-to-the-given/
+    private static String truncate(final String s, final Charset charset, final int length) {
+        final ByteBuffer bb = ByteBuffer.wrap(s.getBytes(charset), 0, length);
+        final CharBuffer cb = CharBuffer.allocate(length);
+        final CharsetDecoder cd = charset.newDecoder();
+        cd.onMalformedInput(CodingErrorAction.IGNORE);
+        if (!cd.decode(bb, cb, true).isUnderflow()) {
+            throw new AssertionError();
+        }
+        if (!cd.flush(cb).isUnderflow()) {
+            throw new AssertionError();
+        }
+        return new String(cb.array(), 0, cb.position());
     }
 
     static class MyListener extends WebSocketListener {
