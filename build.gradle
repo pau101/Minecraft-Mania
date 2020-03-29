@@ -48,6 +48,8 @@ jar {
 
 dependencies {
     minecraft "net.minecraftforge:forge:1.15.2-31.1.18"
+    // https://mvnrepository.com/artifact/com.squareup.okhttp3/okhttp
+    compile "com.squareup.okhttp3:okhttp:4.4.1"
 }
 
 processResources {
