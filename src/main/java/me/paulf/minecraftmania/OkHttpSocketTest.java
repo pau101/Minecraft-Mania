@@ -32,6 +32,47 @@ public final class OkHttpSocketTest {
         MoreExecutors.shutdownAndAwaitTermination(client.dispatcher().executorService(), Long.MAX_VALUE, TimeUnit.NANOSECONDS);
     }
 
+    // https://unicode.org/reports/tr17/
+    public static String truncateUtf8(final String str, final int maxBytes) {
+        final int replacement = 1; // default replacement character is '?'
+        if (str.length() * 3 < maxBytes) {
+            return str;
+        }
+        for (int i = 0, bytes = 0; i < str.length(); i++) {
+            char ch = str.charAt(i);
+            final int len = i;
+            if (ch < '\u0080') {
+                // 0x00..0x7F
+                bytes += 1;
+            } else if (ch < '\u0800') {
+                // 0x80..0x7FF
+                bytes += 2;
+            } else if (ch < '\uD800') {
+                // 0x800..0xD7FF
+                bytes += 3;
+            } else if (ch < '\uDC00') {
+                // high surrogate
+                if (i + 1 < str.length() && (ch = str.charAt(i + 1)) >= '\uDC00' && ch < '\uE000') {
+                    // 0x10000..0x10FFFF
+                    bytes += 4;
+                    i++;
+                } else {
+                    bytes += replacement;
+                }
+            } else if (ch < '\uE000') {
+                // low surrogate
+                bytes += replacement;
+            } else {
+                // 0xE000..0xFFFF
+                bytes += 3;
+            }
+            if (bytes > maxBytes) {
+                return str.substring(0, len);
+            }
+        }
+        return str;
+    }
+
     // https://blog.jakubholy.net/2007/11/02/truncating-utf-string-to-the-given/
     private static String truncate(final String s, final Charset charset, final int length) {
         final ByteBuffer bb = ByteBuffer.wrap(s.getBytes(charset), 0, length);
