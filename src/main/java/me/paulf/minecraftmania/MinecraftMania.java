@@ -10,9 +10,9 @@ import me.paulf.minecraftmania.function.DayTimeFunction;
 import me.paulf.minecraftmania.function.DisableKeyFunction;
 import me.paulf.minecraftmania.function.EffectFunction;
 import me.paulf.minecraftmania.function.GiveFunction;
-import me.paulf.minecraftmania.function.PostProcessingFunction;
 import me.paulf.minecraftmania.function.KillFunction;
 import me.paulf.minecraftmania.function.NightTimeFunction;
+import me.paulf.minecraftmania.function.PostProcessingFunction;
 import me.paulf.minecraftmania.function.PressKeyFunction;
 import me.paulf.minecraftmania.function.RandomSoundPicker;
 import me.paulf.minecraftmania.function.SummonFunction;
@@ -59,33 +59,7 @@ public final class MinecraftMania {
 
     private final GameSettings settings = Minecraft.getInstance().gameSettings;
 
-    private final ViewerCommandMap map = new ViewerCommandMap.Builder()
-        // Client
-        .add("disable_forward", new DisableKeyFunction(this.settings.keyBindForward, Duration.ofMinutes(2)))
-        .add("disable_back", new DisableKeyFunction(this.settings.keyBindBack, Duration.ofMinutes(2)))
-        .add("disable_sneak", new DisableKeyFunction(this.settings.keyBindSneak, Duration.ofMinutes(2)))
-        .add("disable_jump", new DisableKeyFunction(this.settings.keyBindJump, Duration.ofMinutes(2)))
-        .add("disable_inventory", new DisableKeyFunction(this.settings.keyBindInventory, Duration.ofMinutes(2)))
-        .add("swap_forward_back", new SwapKeyFunction(this.settings.keyBindForward, this.settings.keyBindBack, Duration.ofMinutes(2)))
-        .add("swap_left_right", new SwapKeyFunction(this.settings.keyBindLeft, this.settings.keyBindRight, Duration.ofMinutes(2)))
-        .add("swap_jump_sneak", new SwapKeyFunction(this.settings.keyBindJump, this.settings.keyBindSneak, Duration.ofMinutes(2)))
-        .add("swap_use_attack", new SwapKeyFunction(this.settings.keyBindUseItem, this.settings.keyBindAttack, Duration.ofMinutes(2)))
-        .add("press_forward", new PressKeyFunction(this.settings.keyBindForward, Duration.ofMinutes(2)))
-        .add("press_jump", new PressKeyFunction(this.settings.keyBindJump, Duration.ofMinutes(2)))
-        .add("lang_pirate", new ChangeLanguageFunction("en_pt", Duration.ofMinutes(2)))
-        .add("lang_shakespearean", new ChangeLanguageFunction("enws", Duration.ofMinutes(2)))
-        .add("lang_lolcat", new ChangeLanguageFunction("lol_us", Duration.ofMinutes(2)))
-        .add("oink", new SoundFunction(Duration.ofMinutes(2), () -> rl -> Optional.of(SoundEvents.ENTITY_PIG_AMBIENT)))
-        .add("ruckus", new SoundFunction(Duration.ofMinutes(2), () -> new RandomSoundPicker(new Random().nextLong())))
-        .add("vibrato", new VibratoFunction(Duration.ofMinutes(2)))
-        .add("jpeg", new PostProcessingFunction(new ResourceLocation(MinecraftMania.ID, "shaders/post/jpeg.json"), Duration.ofMinutes(2)))
-        .add("rgb", new PostProcessingFunction(new ResourceLocation(MinecraftMania.ID, "shaders/post/rgb.json"), Duration.ofMinutes(2)))
-        .add("desaturate", new PostProcessingFunction(new ResourceLocation("shaders/post/desaturate.json"), Duration.ofMinutes(2)))
-        // Misc
-        .add("kill", new KillFunction())
-        .add("time_day", new DayTimeFunction())
-        .add("time_night", new NightTimeFunction())
-        // Effects
+    private final ViewerCommandMap effectMap = new ViewerCommandMap.Builder()
         .add("effect_damage", new EffectFunction(Effects.INSTANT_DAMAGE, 1, 0))
         .add("effect_health", new EffectFunction(Effects.INSTANT_HEALTH, 1, 0))
         .add("effect_saturation", new EffectFunction(Effects.SATURATION, 4, 0))
@@ -93,7 +67,9 @@ public final class MinecraftMania {
         .add("effect_speed", new EffectFunction(Effects.SPEED, 60, 9))
         .add("effect_slowness", new EffectFunction(Effects.SLOWNESS, 30, 2))
         .add("effect_jumping", new EffectFunction(Effects.JUMP_BOOST, 60, 9))
-        // Summons
+        .build();
+
+    private final ViewerCommandMap summonMap = new ViewerCommandMap.Builder()
         .add("summon_creeper", new SummonFunction(EntityType.CREEPER))
         .add("summon_blaze", new SummonFunction(EntityType.BLAZE))
         .add("summon_enderman", new SummonFunction(EntityType.ENDERMAN))
@@ -113,7 +89,9 @@ public final class MinecraftMania {
         .add("summon_pig", new SummonFunction(EntityType.PIG))
         .add("summon_sheep", new SummonFunction(EntityType.SHEEP))
         .add("summon_villager", new SummonFunction(EntityType.VILLAGER))
-        // Gives
+        .build();
+
+    private final ViewerCommandMap giveMap = new ViewerCommandMap.Builder()
         .add("give_wood", new GiveFunction(Items.OAK_LOG))
         .add("give_iron", new GiveFunction(Items.IRON_INGOT))
         .add("give_diamond", new GiveFunction(Items.DIAMOND))
@@ -130,9 +108,53 @@ public final class MinecraftMania {
         .add("give_diamond_hoe", new GiveFunction(Items.DIAMOND_HOE))
         .build();
 
+    // Client
+    private final ViewerCommandMap keyMap = new ViewerCommandMap.Builder()
+        .add("disable_forward", new DisableKeyFunction(this.settings.keyBindForward, Duration.ofMinutes(2)))
+        .add("disable_back", new DisableKeyFunction(this.settings.keyBindBack, Duration.ofMinutes(2)))
+        .add("disable_sneak", new DisableKeyFunction(this.settings.keyBindSneak, Duration.ofMinutes(2)))
+        .add("disable_jump", new DisableKeyFunction(this.settings.keyBindJump, Duration.ofMinutes(2)))
+        .add("disable_inventory", new DisableKeyFunction(this.settings.keyBindInventory, Duration.ofMinutes(2)))
+        .add("swap_forward_back", new SwapKeyFunction(this.settings.keyBindForward, this.settings.keyBindBack, Duration.ofMinutes(2)))
+        .add("swap_left_right", new SwapKeyFunction(this.settings.keyBindLeft, this.settings.keyBindRight, Duration.ofMinutes(2)))
+        .add("swap_jump_sneak", new SwapKeyFunction(this.settings.keyBindJump, this.settings.keyBindSneak, Duration.ofMinutes(2)))
+        .add("swap_use_attack", new SwapKeyFunction(this.settings.keyBindUseItem, this.settings.keyBindAttack, Duration.ofMinutes(2)))
+        .add("press_forward", new PressKeyFunction(this.settings.keyBindForward, Duration.ofMinutes(2)))
+        .add("press_jump", new PressKeyFunction(this.settings.keyBindJump, Duration.ofMinutes(2)))
+        .build();
+
+    private final ViewerCommandMap langMap = new ViewerCommandMap.Builder()
+        .add("lang_pirate", new ChangeLanguageFunction("en_pt", Duration.ofMinutes(2)))
+        .add("lang_shakespearean", new ChangeLanguageFunction("enws", Duration.ofMinutes(2)))
+        .add("lang_lolcat", new ChangeLanguageFunction("lol_us", Duration.ofMinutes(2)))
+        .build();
+
+    private final ViewerCommandMap soundMap = new ViewerCommandMap.Builder()
+        .add("oink", new SoundFunction(Duration.ofMinutes(2), () -> rl -> Optional.of(SoundEvents.ENTITY_PIG_AMBIENT)))
+        .add("ruckus", new SoundFunction(Duration.ofMinutes(2), () -> new RandomSoundPicker(new Random().nextLong())))
+        .add("vibrato", new VibratoFunction(Duration.ofMinutes(2)))
+        .build();
+
+    private final ViewerCommandMap visualMap = new ViewerCommandMap.Builder()
+        .add("jpeg", new PostProcessingFunction(new ResourceLocation(MinecraftMania.ID, "shaders/post/jpeg.json"), Duration.ofMinutes(2)))
+        .add("rgb", new PostProcessingFunction(new ResourceLocation(MinecraftMania.ID, "shaders/post/rgb.json"), Duration.ofMinutes(2)))
+        .add("desaturate", new PostProcessingFunction(new ResourceLocation("shaders/post/desaturate.json"), Duration.ofMinutes(2)))
+        .build();
+
+    private final ViewerCommandMap map = new ViewerCommandMap.Builder()
+        // Misc
+        .add("kill", new KillFunction())
+        .add("time_day", new DayTimeFunction())
+        .add("time_night", new NightTimeFunction())
+        .build();
+
     private final StickyMessageHelper sticky = new StickyMessageHelper();
 
     private State state = new OutOfGameState();
+
+    static {
+        System.setProperty("org.eclipse.jetty.util.log.class", "me.paulf.minecraftmania.jetty.Log4jLog");
+    }
 
     public MinecraftMania() {
         DistExecutor.runWhenOn(Dist.CLIENT, () -> () -> {
@@ -174,7 +196,7 @@ public final class MinecraftMania {
             if (predicate.test(sibling)) {
                 return true;
             }
-            if (!sibling.getUnformattedComponentText().isEmpty()) {
+            if (!sibling.getString().isEmpty()) {
                 return false;
             }
         }
