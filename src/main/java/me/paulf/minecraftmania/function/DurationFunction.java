@@ -13,7 +13,7 @@ public abstract class DurationFunction implements CommandFunction {
     }
 
     @Override
-    public void run(final MinecraftMania.Context context) {
+    public void run(final MinecraftMania.CommandContext context) {
         context.addRunningFunction(this.duration, this.createFunction());
     }
 

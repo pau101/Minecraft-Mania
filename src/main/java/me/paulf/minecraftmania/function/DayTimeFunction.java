@@ -6,7 +6,7 @@ import net.minecraft.world.GameRules;
 
 public class DayTimeFunction implements CommandFunction {
     @Override
-    public void run(final MinecraftMania.Context context) {
+    public void run(final MinecraftMania.CommandContext context) {
         if (context.world().getGameRules().getBoolean(GameRules.DO_DAYLIGHT_CYCLE)) {
             context.commands().time(CommandSender.TimeOfDay.DAY);
         } else {

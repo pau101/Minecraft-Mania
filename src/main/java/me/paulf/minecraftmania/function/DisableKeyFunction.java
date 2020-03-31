@@ -22,7 +22,7 @@ public class DisableKeyFunction extends DurationFunction {
     }
 
     @Override
-    public ITextComponent getMessage(final MinecraftMania.Context context) {
+    public ITextComponent getMessage(final MinecraftMania.CommandContext context) {
         return new TranslationTextComponent("mania.disable_key", context.getViewerName(), this.getKeyName());
     }
 

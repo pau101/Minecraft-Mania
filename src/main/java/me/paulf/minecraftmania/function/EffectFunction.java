@@ -20,12 +20,16 @@ public class EffectFunction implements CommandFunction {
     }
 
     @Override
-    public ITextComponent getMessage(final MinecraftMania.Context context) {
+    public ITextComponent getMessage(final MinecraftMania.CommandContext context) {
         return new TranslationTextComponent("mania.effect", context.getViewerName(), this.effect.getDisplayName().applyTextStyle(this.effect.isBeneficial() ? TextFormatting.GREEN : TextFormatting.RED));
     }
 
     @Override
-    public void run(final MinecraftMania.Context context) {
+    public void run(final MinecraftMania.CommandContext context) {
         context.commands().effect(this.effect, this.duration, this.amplifier, this.effect.isInstant());
+    }
+
+    public static boolean isOperable(final MinecraftMania.Context context) {
+        return context.commands().hasEffect();
     }
 }

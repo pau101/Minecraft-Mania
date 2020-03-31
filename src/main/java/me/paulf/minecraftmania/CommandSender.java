@@ -13,6 +13,16 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.text.ITextComponent;
 
 public interface CommandSender {
+    boolean hasSummon();
+
+    boolean hasGive();
+
+    boolean hasKill();
+
+    boolean hasEffect();
+
+    boolean hasTime();
+
     void summon(final EntityType<?> entity, final Vec3d pos, final CompoundNBT nbt);
 
     void give(final Item item, final CompoundNBT nbt, final int count);

@@ -15,12 +15,16 @@ public class GiveFunction implements CommandFunction {
     }
 
     @Override
-    public ITextComponent getMessage(final MinecraftMania.Context context) {
+    public ITextComponent getMessage(final MinecraftMania.CommandContext context) {
         return new TranslationTextComponent("mania.give", context.getViewerName(), new TranslationTextComponent(this.item.getTranslationKey()).applyTextStyle(TextFormatting.AQUA));
     }
 
     @Override
-    public void run(final MinecraftMania.Context context) {
+    public void run(final MinecraftMania.CommandContext context) {
         context.commands().give(this.item, new CompoundNBT(), 1);
+    }
+
+    public static boolean isOperable(final MinecraftMania.Context context) {
+        return context.commands().hasGive();
     }
 }

@@ -16,8 +16,10 @@
     "mania.oink.running": "Oinks for %1$s more seconds",
     "mania.ruckus": "Viewer %1$s brought ruckus",
     "mania.ruckus.running": "Ruckus for %1$s more seconds",
-    "mania.jpeg": "Viewer %1$s needed more jpeg",
-    "mania.jpeg.running": "More jpeg for %1$s more seconds",
+    "mania.jpeg": "Viewer %1$s jpeg's your screen",
+    "mania.jpeg.running": "Needing more jpeg for %1$s more seconds",
+    "mania.desaturate": "Viewer %1$s desaturated your screen",
+    "mania.desaturate.running": "Desaturated for %1$s more seconds",
     "mania.vibrato": "Viewer %1$s turned on vibrato",
     "mania.vibrato.running": "Vibrato for %1$s more seconds"
 }

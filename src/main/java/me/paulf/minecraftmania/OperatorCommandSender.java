@@ -31,6 +31,31 @@ public class OperatorCommandSender implements CommandSender {
     }
 
     @Override
+    public boolean hasSummon() {
+        return false;
+    }
+
+    @Override
+    public boolean hasGive() {
+        return false;
+    }
+
+    @Override
+    public boolean hasKill() {
+        return false;
+    }
+
+    @Override
+    public boolean hasEffect() {
+        return false;
+    }
+
+    @Override
+    public boolean hasTime() {
+        return false;
+    }
+
+    @Override
     public void summon(final EntityType<?> entity, final Vec3d pos, final CompoundNBT nbt) {
         this.accept("/summon %s %.2f %.2f %.2f", entity.getRegistryName(), pos.getX(), pos.getY(), pos.getZ());
         final ListNBT tags = new ListNBT();

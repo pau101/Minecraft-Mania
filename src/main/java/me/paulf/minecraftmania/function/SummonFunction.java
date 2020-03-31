@@ -33,7 +33,7 @@ public final class SummonFunction implements CommandFunction {
     }
 
     @Override
-    public void run(final MinecraftMania.Context context) {
+    public void run(final MinecraftMania.CommandContext context) {
         final AxisAlignedBB spawn = this.optimalSpawn(context.world(), context.player());
         final CompoundNBT nbt = new CompoundNBT();
         this.nbtSupplier.accept(context.player(), nbt);
@@ -105,5 +105,9 @@ public final class SummonFunction implements CommandFunction {
             second = dx;
         }
         return new Direction[] { first, second, second.getOpposite(), first.getOpposite() };
+    }
+
+    public static boolean isOperable(final MinecraftMania.Context context) {
+        return context.commands().hasSummon();
     }
 }

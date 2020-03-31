@@ -35,7 +35,7 @@ public class CorruptFunction implements CommandFunction {
     }
 
     @Override
-    public void run(final MinecraftMania.Context context) {
+    public void run(final MinecraftMania.CommandContext context) {
         context.addRunningFunction(this.duration, new RunningFunction() {
             private IntSet effected = new IntOpenHashSet();
 

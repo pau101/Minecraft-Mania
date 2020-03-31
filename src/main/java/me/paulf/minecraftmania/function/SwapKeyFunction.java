@@ -25,7 +25,7 @@ public class SwapKeyFunction extends DurationFunction {
     }
 
     @Override
-    public ITextComponent getMessage(final MinecraftMania.Context context) {
+    public ITextComponent getMessage(final MinecraftMania.CommandContext context) {
         return new TranslationTextComponent("mania.key_swap", context.getViewerName(), this.getKeyName(this.first), this.getKeyName(this.second));
     }
 

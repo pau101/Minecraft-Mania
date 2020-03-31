@@ -26,7 +26,7 @@ public class SoundFunction implements CommandFunction {
     }
 
     @Override
-    public void run(final MinecraftMania.Context context) {
+    public void run(final MinecraftMania.CommandContext context) {
         context.addRunningFunction(this.duration, new MyRunningFunction(this.sound));
     }
 

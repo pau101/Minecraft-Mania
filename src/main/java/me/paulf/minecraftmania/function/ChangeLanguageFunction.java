@@ -22,7 +22,7 @@ public class ChangeLanguageFunction extends DurationFunction {
     }
 
     @Override
-    public ITextComponent getMessage(final MinecraftMania.Context context) {
+    public ITextComponent getMessage(final MinecraftMania.CommandContext context) {
         final LanguageManager manager = Minecraft.getInstance().getLanguageManager();
         final Language language = manager.getLanguage(this.language);
         return new TranslationTextComponent(

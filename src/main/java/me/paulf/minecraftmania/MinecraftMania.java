@@ -1,5 +1,8 @@
 package me.paulf.minecraftmania;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.primitives.Ints;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
@@ -45,6 +48,7 @@ import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.common.Mod;
 
 import java.time.Duration;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Locale;
@@ -59,7 +63,7 @@ public final class MinecraftMania {
 
     private final GameSettings settings = Minecraft.getInstance().gameSettings;
 
-    private final ViewerCommandMap effectMap = new ViewerCommandMap.Builder()
+    private final CommandSet effectMap = new CommandSet.Builder(EffectFunction::isOperable)
         .add("effect_damage", new EffectFunction(Effects.INSTANT_DAMAGE, 1, 0))
         .add("effect_health", new EffectFunction(Effects.INSTANT_HEALTH, 1, 0))
         .add("effect_saturation", new EffectFunction(Effects.SATURATION, 4, 0))
@@ -69,7 +73,7 @@ public final class MinecraftMania {
         .add("effect_jumping", new EffectFunction(Effects.JUMP_BOOST, 60, 9))
         .build();
 
-    private final ViewerCommandMap summonMap = new ViewerCommandMap.Builder()
+    private final CommandSet summonMap = new CommandSet.Builder(SummonFunction::isOperable)
         .add("summon_creeper", new SummonFunction(EntityType.CREEPER))
         .add("summon_blaze", new SummonFunction(EntityType.BLAZE))
         .add("summon_enderman", new SummonFunction(EntityType.ENDERMAN))
@@ -91,7 +95,7 @@ public final class MinecraftMania {
         .add("summon_villager", new SummonFunction(EntityType.VILLAGER))
         .build();
 
-    private final ViewerCommandMap giveMap = new ViewerCommandMap.Builder()
+    private final CommandSet giveMap = new CommandSet.Builder(GiveFunction::isOperable)
         .add("give_wood", new GiveFunction(Items.OAK_LOG))
         .add("give_iron", new GiveFunction(Items.IRON_INGOT))
         .add("give_diamond", new GiveFunction(Items.DIAMOND))
@@ -108,8 +112,17 @@ public final class MinecraftMania {
         .add("give_diamond_hoe", new GiveFunction(Items.DIAMOND_HOE))
         .build();
 
+    private final CommandSet killMap = new CommandSet.Builder(KillFunction::isOperable)
+        .add("kill", new KillFunction())
+        .build();
+
+    private final CommandSet timeMap = new CommandSet.Builder(ctx -> ctx.commands().hasTime())
+        .add("time_day", new DayTimeFunction())
+        .add("time_night", new NightTimeFunction())
+        .build();
+
     // Client
-    private final ViewerCommandMap keyMap = new ViewerCommandMap.Builder()
+    private final CommandSet keyMap = new CommandSet.Builder()
         .add("disable_forward", new DisableKeyFunction(this.settings.keyBindForward, Duration.ofMinutes(2)))
         .add("disable_back", new DisableKeyFunction(this.settings.keyBindBack, Duration.ofMinutes(2)))
         .add("disable_sneak", new DisableKeyFunction(this.settings.keyBindSneak, Duration.ofMinutes(2)))
@@ -123,47 +136,82 @@ public final class MinecraftMania {
         .add("press_jump", new PressKeyFunction(this.settings.keyBindJump, Duration.ofMinutes(2)))
         .build();
 
-    private final ViewerCommandMap langMap = new ViewerCommandMap.Builder()
+    private final CommandSet langMap = new CommandSet.Builder()
         .add("lang_pirate", new ChangeLanguageFunction("en_pt", Duration.ofMinutes(2)))
         .add("lang_shakespearean", new ChangeLanguageFunction("enws", Duration.ofMinutes(2)))
         .add("lang_lolcat", new ChangeLanguageFunction("lol_us", Duration.ofMinutes(2)))
         .build();
 
-    private final ViewerCommandMap soundMap = new ViewerCommandMap.Builder()
+    private final CommandSet soundMap = new CommandSet.Builder()
         .add("oink", new SoundFunction(Duration.ofMinutes(2), () -> rl -> Optional.of(SoundEvents.ENTITY_PIG_AMBIENT)))
         .add("ruckus", new SoundFunction(Duration.ofMinutes(2), () -> new RandomSoundPicker(new Random().nextLong())))
         .add("vibrato", new VibratoFunction(Duration.ofMinutes(2)))
         .build();
 
-    private final ViewerCommandMap visualMap = new ViewerCommandMap.Builder()
+    private final CommandSet visualMap = new CommandSet.Builder()
         .add("jpeg", new PostProcessingFunction(new ResourceLocation(MinecraftMania.ID, "shaders/post/jpeg.json"), Duration.ofMinutes(2)))
         .add("rgb", new PostProcessingFunction(new ResourceLocation(MinecraftMania.ID, "shaders/post/rgb.json"), Duration.ofMinutes(2)))
         .add("desaturate", new PostProcessingFunction(new ResourceLocation("shaders/post/desaturate.json"), Duration.ofMinutes(2)))
         .build();
 
-    private final ViewerCommandMap map = new ViewerCommandMap.Builder()
-        // Misc
-        .add("kill", new KillFunction())
-        .add("time_day", new DayTimeFunction())
-        .add("time_night", new NightTimeFunction())
+    private final CommandSet set = new CommandSet.Builder()
+        .add(new CommandSet.Builder()
+            .add(this.keyMap)
+            .add(this.langMap)
+            .add(this.soundMap)
+            .add(this.visualMap)
+            .build())
+        .add(this.effectMap)
+        .add(this.summonMap)
+        .add(this.giveMap)
+        .add(this.killMap)
+        .add(this.timeMap)
         .build();
+
+    public static class CommandMap {
+        private final ImmutableMap<String, CommandFunction> map;
+
+        private final CommandFunction noop = (p) -> {};
+
+        CommandMap(final Builder builder) {
+            this.map = builder.map.build();
+        }
+
+        public ImmutableSet<String> keys() {
+            return this.map.keySet();
+        }
+
+        public CommandFunction get(final ViewerCommand command) {
+            return this.map.getOrDefault(command.getCommand(), this.noop);
+        }
+
+        public static class Builder {
+            final ImmutableSortedMap.Builder<String, CommandFunction> map = new ImmutableSortedMap.Builder<>(Comparator.naturalOrder());
+
+            public Builder add(final String name, final CommandFunction command) {
+                this.map.put(name, command);
+                return this;
+            }
+
+            public CommandMap build() {
+                return new CommandMap(this);
+            }
+        }
+    }
 
     private final StickyMessageHelper sticky = new StickyMessageHelper();
 
     private State state = new OutOfGameState();
-
-    static {
-        System.setProperty("org.eclipse.jetty.util.log.class", "me.paulf.minecraftmania.jetty.Log4jLog");
-    }
 
     public MinecraftMania() {
         DistExecutor.runWhenOn(Dist.CLIENT, () -> () -> {
             //LiveEdit.instance().init();
             final IEventBus bus = MinecraftForge.EVENT_BUS;
             this.sticky.register(bus);
-            bus.<ClientPlayerNetworkEvent.LoggedInEvent>addListener(e -> this.join(e.getPlayer()));
-            bus.<ClientPlayerNetworkEvent.RespawnEvent>addListener(e -> this.join(e.getPlayer()));
+            //bus.<ClientPlayerNetworkEvent.LoggedInEvent>addListener(e -> this.join(e.getPlayer()));
+            //bus.<ClientPlayerNetworkEvent.RespawnEvent>addListener(e -> this.join(e.getPlayer()));
             bus.<ClientPlayerNetworkEvent.LoggedOutEvent>addListener(e -> this.leave());
+            new CommandsListener((player, dispatcher) -> this.join(player)).register(bus);
             new ClientCommandProvider.Builder()
                 .add(this::mania)
                 .build()
@@ -209,7 +257,7 @@ public final class MinecraftMania {
                 RequiredArgumentBuilder.<S, String>argument("command", StringArgumentType.string())
                     .suggests((context, builder) -> {
                         final String remaining = builder.getRemaining().toLowerCase(Locale.ROOT);
-                        for (final String command : this.map.keys()) {
+                        for (final String command : this.state.commands()) {
                             if (command.startsWith(remaining)) {
                                 builder.suggest(command);
                             }
@@ -227,10 +275,16 @@ public final class MinecraftMania {
     }
 
     private void join(final ClientPlayerEntity player) {
-        this.moveState(new InGameState(player));
+        final CommandSender sender = new OperatorCommandSender(player::sendChatMessage);
+        final CommandMap.Builder builder = new CommandMap.Builder();
+        this.set.build(new Context(sender, player.world, player), builder);
+        this.moveState(new InGameState(player, builder.build(), sender));
+        sender.tell(new StringTextComponent("Initialized").applyTextStyle(TextFormatting.GREEN));
     }
 
-    abstract class State {
+    abstract static class State {
+        abstract ImmutableSet<String> commands();
+
         abstract void accept(final ViewerCommand command);
 
         void start() {
@@ -240,29 +294,26 @@ public final class MinecraftMania {
         }
     }
 
-    class OutOfGameState extends State {
+    static class OutOfGameState extends State {
+        @Override
+        ImmutableSet<String> commands() {
+            return ImmutableSet.of();
+        }
+
         @Override
         void accept(final ViewerCommand command) {
         }
     }
 
-    public static final class Context {
-        final InGameState state;
+    public static class Context {
         final CommandSender commands;
         final World world;
         final PlayerEntity player;
-        final ViewerCommand command;
 
-        private Context(final InGameState state, final CommandSender commands, final World world, final PlayerEntity player, final ViewerCommand command) {
-            this.state = state;
+        public Context(final CommandSender commands, final World world, final PlayerEntity player) {
             this.commands = commands;
             this.world = world;
             this.player = player;
-            this.command = command;
-        }
-
-        public String getCommand() {
-            return this.command.getCommand();
         }
 
         public CommandSender commands() {
@@ -275,6 +326,21 @@ public final class MinecraftMania {
 
         public PlayerEntity player() {
             return this.player;
+        }
+    }
+
+    public static final class CommandContext extends Context {
+        final InGameState state;
+        final ViewerCommand command;
+
+        private CommandContext(final InGameState state, final CommandSender commands, final World world, final PlayerEntity player, final ViewerCommand command) {
+            super(commands, world, player);
+            this.state = state;
+            this.command = command;
+        }
+
+        public String getCommand() {
+            return this.command.getCommand();
         }
 
         public ITextComponent getViewerName() {
@@ -289,14 +355,22 @@ public final class MinecraftMania {
     class InGameState extends State {
         final ClientPlayerEntity user;
 
+        final CommandMap commands;
+
         final CommandSender sender;
 
         final Map<String, RunningCommandFunction> functions;
 
-        InGameState(final ClientPlayerEntity user) {
+        InGameState(final ClientPlayerEntity user, final CommandMap commands, final CommandSender sender) {
             this.user = user;
-            this.sender = new OperatorCommandSender(user::sendChatMessage);
+            this.commands = commands;
+            this.sender = sender;
             this.functions = new LinkedHashMap<>();
+        }
+
+        @Override
+        ImmutableSet<String> commands() {
+            return this.commands.keys();
         }
 
         void addRunningFunction(final ViewerCommand command, final int ticks, final RunningFunction function) {
@@ -315,8 +389,8 @@ public final class MinecraftMania {
 
         @Override
         void accept(final ViewerCommand command) {
-            final Context context = new Context(this, this.sender, this.user.world, this.user, command);
-            final CommandFunction function = MinecraftMania.this.map.get(command);
+            final CommandContext context = new CommandContext(this, this.sender, this.user.world, this.user, command);
+            final CommandFunction function = this.commands.get(command);
             context.commands().tell(function.getMessage(context));
             function.run(context);
         }

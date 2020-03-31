@@ -21,7 +21,7 @@ public class PressKeyFunction extends DurationFunction {
     }
 
     @Override
-    public ITextComponent getMessage(final MinecraftMania.Context context) {
+    public ITextComponent getMessage(final MinecraftMania.CommandContext context) {
         return new TranslationTextComponent("mania.press_key", context.getViewerName(), this.getKeyName());
     }
 

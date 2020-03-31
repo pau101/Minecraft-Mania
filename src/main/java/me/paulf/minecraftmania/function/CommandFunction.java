@@ -5,9 +5,9 @@ import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TranslationTextComponent;
 
 public interface CommandFunction {
-    default ITextComponent getMessage(final MinecraftMania.Context context) {
+    default ITextComponent getMessage(final MinecraftMania.CommandContext context) {
         return new TranslationTextComponent("mania." + context.getCommand(), context.getViewerName());
     }
 
-    void run(final MinecraftMania.Context context);
+    void run(final MinecraftMania.CommandContext context);
 }
