@@ -1,4 +1,5 @@
 {
+    "mania.ready": "Ready with %1$s commands available!",
     "mania.disable_key": "Viewer %1$s disabled %2$s",
     "mania.disable_key.running": "%1$s is disabled for %2$s more seconds",
     "mania.press_key": "Viewer %1$s pressed %2$s",

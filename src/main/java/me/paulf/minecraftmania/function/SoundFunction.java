@@ -1,6 +1,7 @@
-package me.paulf.minecraftmania;
+package me.paulf.minecraftmania.function;
 
-import me.paulf.minecraftmania.function.CommandFunction;
+import me.paulf.minecraftmania.MinecraftMania;
+import me.paulf.minecraftmania.RunningFunction;
 import net.minecraft.client.audio.ISound;
 import net.minecraft.client.audio.LocatableSound;
 import net.minecraft.client.audio.SimpleSound;

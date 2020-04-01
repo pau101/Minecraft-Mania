@@ -5,7 +5,7 @@ import me.paulf.minecraftmania.function.CommandFunction;
 
 import java.util.function.Predicate;
 
-public class CommandSet {
+public final class CommandSet {
     private final Predicate<MinecraftMania.Context> operable;
 
     private final ImmutableList<Node> nodes;
@@ -15,7 +15,7 @@ public class CommandSet {
         this.nodes = builder.nodes.build();
     }
 
-    public void build(final MinecraftMania.Context context, final MinecraftMania.CommandMap.Builder builder) {
+    public void build(final MinecraftMania.Context context, final CommandMap.Builder builder) {
         if (this.operable.test(context)) {
             for (final Node n : this.nodes) {
                 n.accept(context, builder);
@@ -23,7 +23,7 @@ public class CommandSet {
         }
     }
 
-    public static class Builder {
+    public static final class Builder {
         private final ImmutableList.Builder<Node> nodes = new ImmutableList.Builder<>();
 
         private final Predicate<MinecraftMania.Context> operable;
@@ -52,6 +52,6 @@ public class CommandSet {
     }
 
     interface Node {
-        void accept(final MinecraftMania.Context context, final MinecraftMania.CommandMap.Builder builder);
+        void accept(final MinecraftMania.Context context, final CommandMap.Builder builder);
     }
 }

@@ -1,6 +1,8 @@
 package me.paulf.minecraftmania;
 
+import com.mojang.brigadier.CommandDispatcher;
 import net.minecraft.block.BlockState;
+import net.minecraft.command.ISuggestionProvider;
 import net.minecraft.entity.EntityType;
 import net.minecraft.item.Item;
 import net.minecraft.nbt.CompoundNBT;
@@ -20,9 +22,12 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class OperatorCommandSender implements CommandSender {
+    private final CommandDispatcher<ISuggestionProvider> dispatcher;
+
     private final Consumer<String> consumer;
 
-    public OperatorCommandSender(final Consumer<String> consumer) {
+    public OperatorCommandSender(final CommandDispatcher<ISuggestionProvider> dispatcher, final Consumer<String> consumer) {
+        this.dispatcher = dispatcher;
         this.consumer = consumer;
     }
 
@@ -30,29 +35,33 @@ public class OperatorCommandSender implements CommandSender {
         this.consumer.accept(String.format(format, args));
     }
 
+    private boolean hasCommand(final String name) {
+        return this.dispatcher.getRoot().getChild(name) != null;
+    }
+
     @Override
     public boolean hasSummon() {
-        return false;
+        return this.hasCommand("summon");
     }
 
     @Override
     public boolean hasGive() {
-        return false;
+        return this.hasCommand("give");
     }
 
     @Override
     public boolean hasKill() {
-        return false;
+        return this.hasCommand("kill");
     }
 
     @Override
     public boolean hasEffect() {
-        return false;
+        return this.hasCommand("effect");
     }
 
     @Override
     public boolean hasTime() {
-        return false;
+        return this.hasCommand("time");
     }
 
     @Override

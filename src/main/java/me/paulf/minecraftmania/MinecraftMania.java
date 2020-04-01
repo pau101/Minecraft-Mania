@@ -1,9 +1,8 @@
 package me.paulf.minecraftmania;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.primitives.Ints;
+import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
@@ -18,12 +17,14 @@ import me.paulf.minecraftmania.function.NightTimeFunction;
 import me.paulf.minecraftmania.function.PostProcessingFunction;
 import me.paulf.minecraftmania.function.PressKeyFunction;
 import me.paulf.minecraftmania.function.RandomSoundPicker;
+import me.paulf.minecraftmania.function.SoundFunction;
 import me.paulf.minecraftmania.function.SummonFunction;
 import me.paulf.minecraftmania.function.SwapKeyFunction;
 import me.paulf.minecraftmania.function.VibratoFunction;
 import net.minecraft.client.GameSettings;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
+import net.minecraft.command.ISuggestionProvider;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Items;
@@ -48,14 +49,12 @@ import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.common.Mod;
 
 import java.time.Duration;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
-import java.util.function.Predicate;
 
 @Mod(MinecraftMania.ID)
 public final class MinecraftMania {
@@ -168,37 +167,6 @@ public final class MinecraftMania {
         .add(this.timeMap)
         .build();
 
-    public static class CommandMap {
-        private final ImmutableMap<String, CommandFunction> map;
-
-        private final CommandFunction noop = (p) -> {};
-
-        CommandMap(final Builder builder) {
-            this.map = builder.map.build();
-        }
-
-        public ImmutableSet<String> keys() {
-            return this.map.keySet();
-        }
-
-        public CommandFunction get(final ViewerCommand command) {
-            return this.map.getOrDefault(command.getCommand(), this.noop);
-        }
-
-        public static class Builder {
-            final ImmutableSortedMap.Builder<String, CommandFunction> map = new ImmutableSortedMap.Builder<>(Comparator.naturalOrder());
-
-            public Builder add(final String name, final CommandFunction command) {
-                this.map.put(name, command);
-                return this;
-            }
-
-            public CommandMap build() {
-                return new CommandMap(this);
-            }
-        }
-    }
-
     private final StickyMessageHelper sticky = new StickyMessageHelper();
 
     private State state = new OutOfGameState();
@@ -211,7 +179,7 @@ public final class MinecraftMania {
             //bus.<ClientPlayerNetworkEvent.LoggedInEvent>addListener(e -> this.join(e.getPlayer()));
             //bus.<ClientPlayerNetworkEvent.RespawnEvent>addListener(e -> this.join(e.getPlayer()));
             bus.<ClientPlayerNetworkEvent.LoggedOutEvent>addListener(e -> this.leave());
-            new CommandsListener((player, dispatcher) -> this.join(player)).register(bus);
+            new CommandsListener(this::join).register(bus);
             new ClientCommandProvider.Builder()
                 .add(this::mania)
                 .build()
@@ -219,7 +187,7 @@ public final class MinecraftMania {
             bus.<ClientChatReceivedEvent>addListener(e -> {
                 if (e.getType() == ChatType.SYSTEM) {
                     final ITextComponent message = e.getMessage();
-                    if (this.test(message, c -> c instanceof TranslationTextComponent && "argument.entity.notfound.player".equals(((TranslationTextComponent) c).getKey()))) {
+                    if (TextComponents.matches(message, TextComponents.translation("argument.entity.notfound.player"))) {
                         e.setCanceled(true);
                     }
                 }
@@ -231,24 +199,6 @@ public final class MinecraftMania {
         this.state.stop();
         this.state = state;
         this.state.start();
-    }
-
-    public boolean test(final ITextComponent message, final Predicate<ITextComponent> predicate) {
-        if (predicate.test(message)) {
-            return true;
-        }
-        if (!message.getUnformattedComponentText().isEmpty()) {
-            return false;
-        }
-        for (final ITextComponent sibling : message.getSiblings()) {
-            if (predicate.test(sibling)) {
-                return true;
-            }
-            if (!sibling.getString().isEmpty()) {
-                return false;
-            }
-        }
-        return false;
     }
 
     private <S> LiteralArgumentBuilder<S> mania(final ClientCommandProvider.Helper<S> helper) {
@@ -274,12 +224,11 @@ public final class MinecraftMania {
         this.moveState(new OutOfGameState());
     }
 
-    private void join(final ClientPlayerEntity player) {
-        final CommandSender sender = new OperatorCommandSender(player::sendChatMessage);
+    private void join(final ClientPlayerEntity player, final CommandDispatcher<ISuggestionProvider> dispatcher) {
+        final CommandSender sender = new OperatorCommandSender(dispatcher, player::sendChatMessage);
         final CommandMap.Builder builder = new CommandMap.Builder();
         this.set.build(new Context(sender, player.world, player), builder);
         this.moveState(new InGameState(player, builder.build(), sender));
-        sender.tell(new StringTextComponent("Initialized").applyTextStyle(TextFormatting.GREEN));
     }
 
     abstract static class State {
@@ -413,6 +362,7 @@ public final class MinecraftMania {
         void start() {
             super.start();
             MinecraftForge.EVENT_BUS.register(this);
+            this.user.sendMessage(new TranslationTextComponent("mania.ready", this.commands.keys().size()).applyTextStyle(TextFormatting.GREEN));
         }
 
         @Override
