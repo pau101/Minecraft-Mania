@@ -1,0 +1,26 @@
+{
+    "targets": [
+        "swap"
+    ],
+    "passes": [
+        {
+            "name": "minecraftmania:sliding_puzzle",
+            "intarget": "minecraft:main",
+            "outtarget": "swap",
+            "auxtargets": [
+                {
+                    "name": "PuzzleSampler",
+                    "id": "minecraftmania:puzzle",
+                    "width": 1,
+                    "height": 1,
+                    "bilinear": false
+                }
+            ]
+        },
+        {
+            "name": "blit",
+            "intarget": "swap",
+            "outtarget": "minecraft:main"
+        }
+    ]
+}

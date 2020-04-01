@@ -162,6 +162,10 @@ public final class MinecraftMania {
         .add("touchy", new TouchyFunction(Duration.ofMinutes(2)))
         .build();
 
+    private final CommandSet challengeMap = new CommandSet.Builder()
+        .add("sliding_puzzle", context -> Minecraft.getInstance().enqueue(() -> Minecraft.getInstance().displayGuiScreen(new SlidingPuzzleScreen(Minecraft.getInstance().currentScreen))))
+        .build();
+
     private final CommandSet set = new CommandSet.Builder()
         .add(new CommandSet.Builder()
             .add(this.keyMap)
@@ -169,6 +173,7 @@ public final class MinecraftMania {
             .add(this.soundMap)
             .add(this.visualMap)
             .add(this.miscMap)
+            .add(this.challengeMap)
             .build())
         .add(this.effectMap)
         .add(this.summonMap)
@@ -183,8 +188,9 @@ public final class MinecraftMania {
 
     public MinecraftMania() {
         DistExecutor.runWhenOn(Dist.CLIENT, () -> () -> {
-            //LiveEdit.instance().init();
+            LiveEdit.instance().init();
             final IEventBus bus = MinecraftForge.EVENT_BUS;
+            //Minecraft.getInstance().enqueue(() -> bus.register(new ShaderPostProcessing()));
             this.sticky.register(bus);
             //bus.<ClientPlayerNetworkEvent.LoggedInEvent>addListener(e -> this.join(e.getPlayer()));
             //bus.<ClientPlayerNetworkEvent.RespawnEvent>addListener(e -> this.join(e.getPlayer()));

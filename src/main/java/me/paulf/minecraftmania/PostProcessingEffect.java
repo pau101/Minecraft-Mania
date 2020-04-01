@@ -38,13 +38,17 @@ public class PostProcessingEffect implements AutoCloseable {
     abstract static class State {
         State reload(final ResourceLocation location) {
             final Minecraft mc = Minecraft.getInstance();
-            final ShaderGroup shader;
+            final ShaderGroup chain;
             try {
-                shader = new ShaderGroup(mc.getTextureManager(), mc.getResourceManager(), mc.getFramebuffer(), location);
+                chain = new ShaderGroup(mc.getTextureManager(), mc.getResourceManager(), mc.getFramebuffer(), location);
             } catch (final IOException e) {
                 return new ErrorState(e);
             }
-            return new LoadedState(shader);
+            /*final List<Shader> shaders = ObfuscationReflectionHelper.getPrivateValue(ShaderGroup.class, chain, "field_148031_d");
+            final ShaderInstance shader = shaders.get(0).getShaderManager();
+            final int loc = ShaderUniform.func_227806_a_(shader.getProgram(), "Foobar");
+            GL20.glUniform1iv(this.uniformLocation, this.uniformIntBuffer);*/
+            return new LoadedState(chain);
         }
 
         State render(final float delta) {
