@@ -11,15 +11,18 @@ import me.paulf.minecraftmania.function.CommandFunction;
 import me.paulf.minecraftmania.function.DayTimeFunction;
 import me.paulf.minecraftmania.function.DisableKeyFunction;
 import me.paulf.minecraftmania.function.EffectFunction;
+import me.paulf.minecraftmania.function.RandomWorldEventFunction;
 import me.paulf.minecraftmania.function.GiveFunction;
 import me.paulf.minecraftmania.function.KillFunction;
 import me.paulf.minecraftmania.function.NightTimeFunction;
 import me.paulf.minecraftmania.function.PostProcessingFunction;
 import me.paulf.minecraftmania.function.PressKeyFunction;
 import me.paulf.minecraftmania.function.RandomSoundPicker;
+import me.paulf.minecraftmania.function.DeathAnimationFunction;
 import me.paulf.minecraftmania.function.SoundFunction;
 import me.paulf.minecraftmania.function.SummonFunction;
 import me.paulf.minecraftmania.function.SwapKeyFunction;
+import me.paulf.minecraftmania.function.TouchyFunction;
 import me.paulf.minecraftmania.function.VibratoFunction;
 import net.minecraft.client.GameSettings;
 import net.minecraft.client.Minecraft;
@@ -153,12 +156,19 @@ public final class MinecraftMania {
         .add("desaturate", new PostProcessingFunction(new ResourceLocation("shaders/post/desaturate.json"), Duration.ofMinutes(2)))
         .build();
 
+    private final CommandSet miscMap = new CommandSet.Builder()
+        .add("animate_death", new DeathAnimationFunction(Duration.ofMinutes(2)))
+        .add("random_world_events", new RandomWorldEventFunction(Duration.ofMinutes(2)))
+        .add("touchy", new TouchyFunction(Duration.ofMinutes(2)))
+        .build();
+
     private final CommandSet set = new CommandSet.Builder()
         .add(new CommandSet.Builder()
             .add(this.keyMap)
             .add(this.langMap)
             .add(this.soundMap)
             .add(this.visualMap)
+            .add(this.miscMap)
             .build())
         .add(this.effectMap)
         .add(this.summonMap)
