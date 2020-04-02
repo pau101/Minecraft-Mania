@@ -46,36 +46,37 @@ public class SlidingPuzzleScreen extends Screen {
         super.init(mc, width, height);
         this.rows = 3;
         this.columns = (width * this.rows + height - 1) / height;
-        final Vec2i cur = new Vec2i(this.columns / 2, this.rows / 2);
+        Vec2i cur = new Vec2i(this.columns / 2, this.rows / 2);
         for (int y = 0; y < this.rows; y++) {
             for (int x = 0; x < this.columns; x++) {
                 final Vec2i p = new Vec2i(x, y);
                 this.set(p, NativeImage.getCombined(cur.equals(p) ? 0 : 255, 0, y, x));
             }
         }
-        this.cur = cur;
-        this.prev = null;
-        this.rem = this.columns * this.rows * 2;
-        /*Vec2i prev = null;
-        for (int rem = this.columns * this.rows / 2; rem --> 0; ) {
+//        this.cur = cur;
+//        this.prev = null;
+//        this.rem = this.columns * this.rows * 2;
+        final Random rng = new Random();
+        Vec2i prev = null;
+        for (int rem = this.columns * this.rows * 2; rem --> 0; ) {
             final Vec2i from = cur;
             do {
                 cur = from.add(Vec2i.CARDINAL[rng.nextInt(Vec2i.CARDINAL.length)]);
             } while (cur.equals(prev) || !this.contains(cur));
             new Slide(from).to(cur).move();
             prev = cur;
-        }*/
+        }
         this.texture.updateDynamicTexture();
     }
 
-    final Random rng = new Random();
+    /*final Random rng = new Random();
     Vec2i cur, prev;
-    int rem;
+    int rem;*/
 
     @Override
     public void tick() {
         super.tick();
-        if (this.rem >= 0) {
+        /*if (this.rem >= 0) {
             final Vec2i from = this.cur;
             do {
                 this.cur = from.add(Vec2i.CARDINAL[this.rng.nextInt(Vec2i.CARDINAL.length)]);
@@ -84,7 +85,7 @@ public class SlidingPuzzleScreen extends Screen {
             this.prev = this.cur;
             this.rem--;
             this.texture.updateDynamicTexture();
-        }
+        }*/
     }
 
     @Override
@@ -123,8 +124,12 @@ public class SlidingPuzzleScreen extends Screen {
     }
 
     private void move(final Slide slide) {
-        slide.move();
         this.minecraft.getSoundHandler().play(SimpleSound.master(SoundEvents.BLOCK_WOOD_PLACE, 1.0F));
+        slide.move();
+        if (slide.from.equals(this.lastHover)) {
+            this.lastHover = null;
+        }
+        this.updateHover();
         this.texture.updateDynamicTexture();
     }
 
@@ -226,20 +231,21 @@ public class SlidingPuzzleScreen extends Screen {
 
     @Override
     public void mouseMoved(final double mouseX, final double mouseY) {
-        final NativeImage image = this.texture.getTextureData();
-        if (image != null) {
-            final Vec2i lh = this.lastHover;
-            final Vec2i h = this.cellAt();
-            if (!h.equals(lh)) {
-                if (lh != null) {
-                    this.setHighlight(lh, 0);
-                }
-                if (this.getMove(h) != null) {
-                    this.setHighlight(h, 255);
-                }
-                this.texture.updateDynamicTexture();
-                this.lastHover = h;
+        this.updateHover();
+        this.texture.updateDynamicTexture();
+    }
+
+    private void updateHover() {
+        final Vec2i lh = this.lastHover;
+        final Vec2i h = this.cellAt();
+        if (!h.equals(lh)) {
+            if (lh != null) {
+                this.setHighlight(lh, 0);
             }
+            if (this.getMove(h) != null) {
+                this.setHighlight(h, 255);
+            }
+            this.lastHover = h;
         }
     }
 
