@@ -11,6 +11,7 @@ import net.minecraft.util.SoundEvents;
 import org.lwjgl.glfw.GLFW;
 
 import javax.annotation.Nullable;
+import java.util.Random;
 
 public class SlidingPuzzleScreen extends Screen {
     private static final ResourceLocation SHADER_LOCATION = new ResourceLocation(MinecraftMania.ID, "shaders/post/sliding_puzzle.json");
@@ -47,6 +48,26 @@ public class SlidingPuzzleScreen extends Screen {
         this.rows = 3;
         this.columns = (width * this.rows + height - 1) / height;
         this.board = new Board(this.columns, this.rows);
+        final Random r = new Random();
+        for (int n = this.rows * this.rows * this.columns * this.columns; n > 0; ) {
+            switch (r.nextInt(4)) {
+                case 0:
+                    if (this.board.up()) n--;
+                    break;
+                case 1:
+                    if (this.board.down()) n--;
+                    break;
+                case 2:
+                    if (this.board.left()) n--;
+                    break;
+                case 3:
+                    if (this.board.right()) n--;
+                    break;
+                default:
+                    n = 0;
+                    break;
+            }
+        }
         this.hover = -1;
         this.updateHover(
             this.minecraft.mouseHelper.getMouseX() * this.minecraft.getMainWindow().getScaledWidth() / this.minecraft.getMainWindow().getWidth(),
