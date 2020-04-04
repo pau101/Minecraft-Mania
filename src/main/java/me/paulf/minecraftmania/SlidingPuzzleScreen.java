@@ -11,8 +11,6 @@ import net.minecraft.util.SoundEvents;
 import org.lwjgl.glfw.GLFW;
 
 import javax.annotation.Nullable;
-import java.util.Objects;
-import java.util.Random;
 
 public class SlidingPuzzleScreen extends Screen {
     private static final ResourceLocation SHADER_LOCATION = new ResourceLocation(MinecraftMania.ID, "shaders/post/sliding_puzzle.json");
@@ -27,6 +25,8 @@ public class SlidingPuzzleScreen extends Screen {
     private int columns;
 
     private int rows;
+
+    private Board board;
 
     public SlidingPuzzleScreen(final Screen parent) {
         super(NarratorChatListener.EMPTY);
@@ -46,7 +46,14 @@ public class SlidingPuzzleScreen extends Screen {
         super.init(mc, width, height);
         this.rows = 3;
         this.columns = (width * this.rows + height - 1) / height;
-        Vec2i cur = new Vec2i(this.columns / 2, this.rows / 2);
+        this.board = new Board(this.columns, this.rows);
+        this.hover = -1;
+        this.updateHover(
+            this.minecraft.mouseHelper.getMouseX() * this.minecraft.getMainWindow().getScaledWidth() / this.minecraft.getMainWindow().getWidth(),
+            this.minecraft.mouseHelper.getMouseY() * this.minecraft.getMainWindow().getScaledHeight() / this.minecraft.getMainWindow().getHeight()
+        );
+        this.upload();
+/*        Vec2i cur = new Vec2i(this.columns / 2, this.rows / 2);
         for (int y = 0; y < this.rows; y++) {
             for (int x = 0; x < this.columns; x++) {
                 final Vec2i p = new Vec2i(x, y);
@@ -66,7 +73,112 @@ public class SlidingPuzzleScreen extends Screen {
             new Slide(from).to(cur).move();
             prev = cur;
         }
-        this.texture.updateDynamicTexture();
+        this.texture.updateDynamicTexture();*/
+    }
+
+    static class Board {
+        final int columns;
+        final int rows;
+        final int[] state;
+        int blank;
+
+        Board(final int columns, final int rows) {
+            this.columns = columns;
+            this.rows = rows;
+            this.state = new int[columns * rows];
+            for (int i = 0; i < columns * rows; i++) {
+                this.state[i] = i;
+            }
+            this.blank = 0;
+        }
+
+        int get(final int index) {
+            return this.state[index];
+        }
+
+        int x(final int index) {
+            return index < 0 ? -1 : index % this.columns;
+        }
+
+        int y(final int index) {
+            return index < 0 ? -1 : index / this.columns;
+        }
+
+        int index(final int x, final int y) {
+            return x + y * this.columns;
+        }
+
+        int swap(final int first, final int second) {
+            final int[] s = this.state;
+            final int temp = s[first];
+            s[first] = s[second];
+            s[second] = temp;
+            return first;
+        }
+
+        boolean up() {
+            if (this.y(this.blank) > 0) {
+                this.blank = this.swap(this.blank - this.columns, this.blank);
+                return true;
+            }
+            return false;
+        }
+
+        boolean down() {
+            if (this.y(this.blank) < this.rows - 1) {
+                this.blank = this.swap(this.blank + this.columns, this.blank);
+                return true;
+            }
+            return false;
+        }
+
+        boolean left() {
+            if (this.x(this.blank) < this.columns - 1) {
+                this.blank = this.swap(this.blank + 1, this.blank);
+                return true;
+            }
+            return false;
+        }
+
+        boolean right() {
+            if (this.x(this.blank) > 0) {
+                this.blank = this.swap(this.blank - 1, this.blank);
+                return true;
+            }
+            return false;
+        }
+
+        boolean moveable(final int x, final int y) {
+            return this.contains(x, y) && Math.abs(x - this.x(this.blank)) + Math.abs(y - this.y(this.blank)) == 1;
+        }
+
+        boolean tap(final int x, final int y) {
+            if (this.moveable(x, y)) {
+                this.blank = this.swap(this.index(x, y), this.blank);
+                return true;
+            }
+            return false;
+        }
+
+        boolean contains(final int x, final int y) {
+            return x >= 0 && y >= 0 && x < this.columns && y < this.rows;
+        }
+    }
+
+    int hover = -1;
+
+    private void upload() {
+        final NativeImage image = this.texture.getTextureData();
+        if (image != null) {
+            for (int y = 0; y < this.board.rows; y++) {
+                for (int x = 0; x < this.board.columns; x++) {
+                    final int i = this.board.index(x, y);
+                    final int pos = this.board.get(i);
+                    image.setPixelRGBA(x, y, NativeImage.getCombined(i == this.board.blank ? 0 : 255, i == this.hover ? 255 : 0, this.board.y(pos), this.board.x(pos)));
+                }
+            }
+            this.texture.updateDynamicTexture();
+        }
     }
 
     /*final Random rng = new Random();
@@ -75,6 +187,9 @@ public class SlidingPuzzleScreen extends Screen {
 
     @Override
     public void tick() {
+        if (this.parent != null) {
+            this.parent.tick();
+        }
         super.tick();
         /*if (this.rem >= 0) {
             final Vec2i from = this.cur;
@@ -96,161 +211,79 @@ public class SlidingPuzzleScreen extends Screen {
         this.post(delta);
     }
 
-    private Vec2i cellAt() {
-        final Minecraft mc = this.minecraft;
-        final int w = mc.getMainWindow().getWidth();
-        final int h = mc.getMainWindow().getHeight();
-        final double x = mc.mouseHelper.getMouseX();
-        final double y = h - 1 - mc.mouseHelper.getMouseY();
+    private Vec2i cell(final double x, final double y) {
+        final int w = this.width;
+        final int h = this.height;
         final int s = (h + this.rows - 1) / this.rows;
         final int ox = (w - this.columns * s) / 2;
         final int oy = (h - this.rows * s) / 2;
         final int cx = (int) ((x - ox) / s);
-        final int cy = (int) ((y - oy) / s);
+        final int cy = (int) ((h - 1 - y - oy) / s);
         return new Vec2i(cx, cy);
     }
 
     @Override
     public boolean mouseClicked(final double mouseX, final double mouseY, final int button) {
         if (button == 0) {
-            final Vec2i cp = this.cellAt();
-            final Slide slide = this.getMove(cp);
-            if (slide != null) {
-                this.move(slide);
-                return true;
+            final Vec2i cp = this.cell(mouseX, mouseY);
+            if (this.board.tap(cp.x, cp.y)) {
+                this.onMove();
             }
         }
         return super.mouseClicked(mouseX, mouseY, button);
     }
 
-    private void move(final Slide slide) {
+    private void onMove() {
         this.minecraft.getSoundHandler().play(SimpleSound.master(SoundEvents.BLOCK_WOOD_PLACE, 1.0F));
-        slide.move();
-        if (slide.from.equals(this.lastHover)) {
-            this.lastHover = null;
-        }
-        this.updateHover();
-        this.texture.updateDynamicTexture();
+        this.upload();
     }
 
     @Override
     public boolean keyPressed(final int key, final int scanCode, final int modifiers) {
-        final Vec2i dir;
         if (key == GLFW.GLFW_KEY_W || key == GLFW.GLFW_KEY_UP) {
-            dir = Vec2i.DOWN;
-        } else if (key == GLFW.GLFW_KEY_S || key == GLFW.GLFW_KEY_DOWN) {
-            dir = Vec2i.UP;
-        } else if (key == GLFW.GLFW_KEY_A || key == GLFW.GLFW_KEY_LEFT) {
-            dir = Vec2i.RIGHT;
-        } else if (key == GLFW.GLFW_KEY_D || key == GLFW.GLFW_KEY_RIGHT) {
-            dir = Vec2i.LEFT;
-        } else {
-            dir = null;
-        }
-        if (dir != null) {
-            for (int y = 0; y < this.rows; y++) {
-                for (int x = 0; x < this.columns; x++) {
-                    final Vec2i p = new Vec2i(x, y);
-                    final Slide s = new Slide(p);
-                    if (NativeImage.getAlpha(s.fromState) == 0) {
-                        final Vec2i n = p.add(dir);
-                        if (this.contains(n)) {
-                            this.move(s.to(p.add(dir)));
-                            return true;
-                        }
-                    }
-                }
+            if (this.board.up()) {
+                this.onMove();
             }
+            return true;
+        } else if (key == GLFW.GLFW_KEY_S || key == GLFW.GLFW_KEY_DOWN) {
+            if (this.board.down()) {
+                this.onMove();
+            }
+            return true;
+        } else if (key == GLFW.GLFW_KEY_A || key == GLFW.GLFW_KEY_LEFT) {
+            if (this.board.left()) {
+                this.onMove();
+            }
+            return true;
+        } else if (key == GLFW.GLFW_KEY_D || key == GLFW.GLFW_KEY_RIGHT) {
+            if (this.board.right()) {
+                this.onMove();
+            }
+            return true;
         }
         return super.keyPressed(key, scanCode, modifiers);
     }
 
-    @Nullable
-    private Slide getMove(final Vec2i cp) {
-        if (this.contains(cp)) {
-            final Slide slide = new Slide(cp);
-            if (NativeImage.getAlpha(slide.fromState) != 0) {
-                for (final Vec2i dir : Vec2i.CARDINAL) {
-                    final Vec2i np = cp.add(dir);
-                    if (this.contains(np)) {
-                        slide.to(np);
-                        if (NativeImage.getAlpha(slide.toState) == 0) {
-                            return slide;
-                        }
-                    }
-                }
-            }
-        }
-        return null;
-    }
-
-    class Slide {
-        final Vec2i from;
-        final int fromState;
-        Vec2i to;
-        int toState;
-
-        Slide(final Vec2i from) {
-            this.from = from;
-            this.fromState = SlidingPuzzleScreen.this.get(from);
-        }
-
-        Slide to(final Vec2i to) {
-            this.to = to;
-            this.toState = SlidingPuzzleScreen.this.get(to);
-            return this;
-        }
-
-        void move() {
-            SlidingPuzzleScreen.this.set(this.from, this.toState & 0xFF00FFFF);
-            SlidingPuzzleScreen.this.set(this.to, this.fromState & 0xFF00FFFF);
-        }
-    }
-
-    @Nullable
-    Vec2i lastHover = null;
-
-    private int get(final Vec2i pos) {
-        final NativeImage image = this.texture.getTextureData();
-        if (image != null) {
-            return image.getPixelRGBA(pos.x, pos.y);
-        }
-        return 0;
-    }
-
-    private void set(final Vec2i pos, final int value) {
-        final NativeImage image = this.texture.getTextureData();
-        if (image != null) {
-            image.setPixelRGBA(pos.x, pos.y, value);
-        }
-    }
-
-    private void setHighlight(final Vec2i pos, final int value) {
-        this.set(pos, this.get(pos) & 0xFF00FFFF | value << 16);
-    }
-
     @Override
     public void mouseMoved(final double mouseX, final double mouseY) {
-        this.updateHover();
-        this.texture.updateDynamicTexture();
-    }
-
-    private void updateHover() {
-        final Vec2i lh = this.lastHover;
-        final Vec2i h = this.cellAt();
-        if (!h.equals(lh)) {
-            if (lh != null) {
-                this.setHighlight(lh, 0);
-            }
-            if (this.getMove(h) != null) {
-                this.setHighlight(h, 255);
-            }
-            this.lastHover = h;
+        if (this.updateHover(mouseX, mouseY)) {
+            this.upload();
         }
     }
 
-    private boolean contains(final Vec2i p) {
-        return p.x >= 0 && p.y >= 0 && p.x < this.columns && p.y < this.rows;
+    private boolean updateHover(final double x, final double y) {
+        final int hx = this.board.x(this.hover);
+        final int hy = this.board.y(this.hover);
+        final Vec2i h = this.cell(x, y);
+        if (hx != h.x || hy != h.y) {
+            if (this.board.moveable(h.x, h.y)) {
+                this.hover = this.board.index(h.x, h.y);
+            } else {
+                this.hover = -1;
+            }
+            return true;
+        }
+        return false;
     }
 
     private void post(final float delta) {
@@ -265,12 +298,6 @@ public class SlidingPuzzleScreen extends Screen {
     }
 
     static class Vec2i {
-        static final Vec2i UP = new Vec2i(0, 1);
-        static final Vec2i DOWN = new Vec2i(0, -1);
-        static final Vec2i LEFT = new Vec2i(-1, 0);
-        static final Vec2i RIGHT = new Vec2i(1, 0);
-        static final Vec2i[] CARDINAL = { RIGHT, UP, LEFT, DOWN };
-
         final int x, y;
 
         Vec2i(final int x, final int y) {
@@ -291,11 +318,7 @@ public class SlidingPuzzleScreen extends Screen {
 
         @Override
         public int hashCode() {
-            return Objects.hash(this.x, this.y);
-        }
-
-        Vec2i add(final Vec2i other) {
-            return new Vec2i(this.x + other.x, this.y + other.y);
+            return this.y * 31 + this.x;
         }
     }
 }
