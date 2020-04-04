@@ -148,13 +148,15 @@ public class SlidingPuzzleScreen extends Screen {
             return false;
         }
 
-        boolean moveable(final int x, final int y) {
+        boolean moveable(final int index) {
+            final int x = this.x(index);
+            final int y = this.y(index);
             return this.contains(x, y) && Math.abs(x - this.x(this.blank)) + Math.abs(y - this.y(this.blank)) == 1;
         }
 
-        boolean tap(final int x, final int y) {
-            if (this.moveable(x, y)) {
-                this.blank = this.swap(this.index(x, y), this.blank);
+        boolean tap(final int index) {
+            if (this.moveable(index)) {
+                this.blank = this.swap(index, this.blank);
                 return true;
             }
             return false;
@@ -211,7 +213,7 @@ public class SlidingPuzzleScreen extends Screen {
         this.post(delta);
     }
 
-    private Vec2i cell(final double x, final double y) {
+    private int cell(final double x, final double y) {
         final int w = this.width;
         final int h = this.height;
         final int s = (h + this.rows - 1) / this.rows;
@@ -219,14 +221,13 @@ public class SlidingPuzzleScreen extends Screen {
         final int oy = (h - this.rows * s) / 2;
         final int cx = (int) ((x - ox) / s);
         final int cy = (int) ((h - 1 - y - oy) / s);
-        return new Vec2i(cx, cy);
+        return this.board.index(cx, cy);
     }
 
     @Override
     public boolean mouseClicked(final double mouseX, final double mouseY, final int button) {
         if (button == 0) {
-            final Vec2i cp = this.cell(mouseX, mouseY);
-            if (this.board.tap(cp.x, cp.y)) {
+            if (this.board.tap(this.cell(mouseX, mouseY))) {
                 this.onMove();
             }
         }
@@ -272,15 +273,9 @@ public class SlidingPuzzleScreen extends Screen {
     }
 
     private boolean updateHover(final double x, final double y) {
-        final int hx = this.board.x(this.hover);
-        final int hy = this.board.y(this.hover);
-        final Vec2i h = this.cell(x, y);
-        if (hx != h.x || hy != h.y) {
-            if (this.board.moveable(h.x, h.y)) {
-                this.hover = this.board.index(h.x, h.y);
-            } else {
-                this.hover = -1;
-            }
+        final int h = this.cell(x, y);
+        if (h != this.hover) {
+            this.hover = this.board.moveable(h) ? h : -1;
             return true;
         }
         return false;
@@ -295,30 +290,5 @@ public class SlidingPuzzleScreen extends Screen {
         super.onClose();
         this.effect.close();
         this.texture.close();
-    }
-
-    static class Vec2i {
-        final int x, y;
-
-        Vec2i(final int x, final int y) {
-            this.x = x;
-            this.y = y;
-        }
-
-        @Override
-        public boolean equals(final Object o) {
-            if (o == this) {
-                return true;
-            }
-            if (o instanceof Vec2i)  {
-                return this.x == ((Vec2i) o).x && this.y == ((Vec2i) o).y;
-            }
-            return false;
-        }
-
-        @Override
-        public int hashCode() {
-            return this.y * 31 + this.x;
-        }
     }
 }
