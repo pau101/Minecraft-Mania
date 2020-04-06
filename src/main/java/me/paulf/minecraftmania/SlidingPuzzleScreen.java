@@ -5,7 +5,7 @@ import org.lwjgl.glfw.GLFW;
 
 import java.util.Random;
 
-public class SlidingPuzzleScreen extends TilePuzzleScreen<SlidingPuzzleScreen.SlidingBoard> {
+public class SlidingPuzzleScreen extends TilePuzzleScreen<SlidingBoard> {
     public SlidingPuzzleScreen(final Screen parent) {
         super(parent);
     }
@@ -14,7 +14,7 @@ public class SlidingPuzzleScreen extends TilePuzzleScreen<SlidingPuzzleScreen.Sl
     protected SlidingBoard createBoard(final int width, final int height) {
         final int rows = 3;
         final int columns = (width * rows + height - 1) / height;
-        final SlidingBoard board = new SlidingPuzzleScreen.SlidingBoard(columns, rows);
+        final SlidingBoard board = new SlidingBoard(columns, rows);
         final Random r = new Random();
         for (int n = rows * rows * columns * columns; n > 0; ) {
             switch (r.nextInt(4)) {
@@ -40,7 +40,7 @@ public class SlidingPuzzleScreen extends TilePuzzleScreen<SlidingPuzzleScreen.Sl
 
     @Override
     protected boolean isBlank(final int index) {
-        return index == this.board.blank;
+        return this.board.isBlank(index);
     }
 
     @Override
@@ -88,60 +88,5 @@ public class SlidingPuzzleScreen extends TilePuzzleScreen<SlidingPuzzleScreen.Sl
             return true;
         }
         return super.keyPressed(key, scanCode, modifiers);
-    }
-
-    static class SlidingBoard extends Board {
-        int blank;
-
-        SlidingBoard(final int columns, final int rows) {
-            super(columns, rows);
-            this.blank = 0;
-        }
-
-        boolean up() {
-            if (this.y(this.blank) > 0) {
-                this.blank = this.swap(this.blank - this.columns, this.blank);
-                return true;
-            }
-            return false;
-        }
-
-        boolean down() {
-            if (this.y(this.blank) < this.rows - 1) {
-                this.blank = this.swap(this.blank + this.columns, this.blank);
-                return true;
-            }
-            return false;
-        }
-
-        boolean left() {
-            if (this.x(this.blank) < this.columns - 1) {
-                this.blank = this.swap(this.blank + 1, this.blank);
-                return true;
-            }
-            return false;
-        }
-
-        boolean right() {
-            if (this.x(this.blank) > 0) {
-                this.blank = this.swap(this.blank - 1, this.blank);
-                return true;
-            }
-            return false;
-        }
-
-        boolean movable(final int index) {
-            final int x = this.x(index);
-            final int y = this.y(index);
-            return this.contains(x, y) && Math.abs(x - this.x(this.blank)) + Math.abs(y - this.y(this.blank)) == 1;
-        }
-
-        boolean tap(final int index) {
-            if (this.movable(index)) {
-                this.blank = this.swap(index, this.blank);
-                return true;
-            }
-            return false;
-        }
     }
 }
