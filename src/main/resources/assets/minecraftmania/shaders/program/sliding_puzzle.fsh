@@ -29,6 +29,9 @@ void main() {
             gl_FragColor = vec4(1.0);
         } else {
             vec3 color = texture2D(DiffuseSampler, c == cell ? texCoord : ((c + frac) * cellSize + offset) / InSize).rgb;
+            if (value.b > 0.5) {
+                color += vec3(0.3);
+            }
             gl_FragColor = vec4(color, 1.0);
         }
     } else {
