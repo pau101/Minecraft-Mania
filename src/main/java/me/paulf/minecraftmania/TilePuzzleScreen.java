@@ -155,8 +155,8 @@ public abstract class TilePuzzleScreen<B extends Board> extends Screen {
     }
 
     @Override
-    public void onClose() {
-        super.onClose();
+    public void removed() {
+        super.removed();
         this.effect.close();
         this.texture.close();
     }
