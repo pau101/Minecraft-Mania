@@ -95,9 +95,17 @@ public final class MinecraftMania {
         .add("summon_pig", new SummonFunction(EntityType.PIG))
         .add("summon_sheep", new SummonFunction(EntityType.SHEEP))
         .add("summon_villager", new SummonFunction(EntityType.VILLAGER))
+        .add("summon_tropical_fish", new SummonFunction(EntityType.TROPICAL_FISH))
         .build();
 
     private final CommandSet giveMap = new CommandSet.Builder(GiveFunction::isOperable)
+        .add("give_bread", new GiveFunction(Items.BREAD))
+        .add("give_cookie", new GiveFunction(Items.COOKIE))
+        .add("give_cake", new GiveFunction(Items.CAKE))
+        .add("give_cooked_beef", new GiveFunction(Items.COOKED_BEEF))
+        .add("give_baked_potato", new GiveFunction(Items.BAKED_POTATO))
+        .add("give_golden_apple", new GiveFunction(Items.GOLDEN_APPLE))
+        .add("give_enchanted_golden_apple", new GiveFunction(Items.ENCHANTED_GOLDEN_APPLE))
         .add("give_wood", new GiveFunction(Items.OAK_LOG))
         .add("give_iron", new GiveFunction(Items.IRON_INGOT))
         .add("give_diamond", new GiveFunction(Items.DIAMOND))
@@ -164,6 +172,7 @@ public final class MinecraftMania {
 
     private final CommandSet challengeMap = new CommandSet.Builder()
         .add("sliding_puzzle", context -> Minecraft.getInstance().enqueue(() -> Minecraft.getInstance().displayGuiScreen(new SlidingPuzzleScreen(Minecraft.getInstance().currentScreen))))
+        .add("jigsaw_puzzle", context -> Minecraft.getInstance().enqueue(() -> Minecraft.getInstance().displayGuiScreen(new JigsawPuzzleScreen(Minecraft.getInstance().currentScreen))))
         .build();
 
     private final CommandSet set = new CommandSet.Builder()

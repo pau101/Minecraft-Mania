@@ -11,9 +11,7 @@ public class SlidingPuzzleScreen extends TilePuzzleScreen<SlidingBoard> {
     }
 
     @Override
-    protected SlidingBoard createBoard(final int width, final int height) {
-        final int rows = 3;
-        final int columns = (width * rows + height - 1) / height;
+    protected SlidingBoard createBoard(final int columns, final int rows) {
         final SlidingBoard board = new SlidingBoard(columns, rows);
         final Random r = new Random();
         for (int n = rows * rows * columns * columns; n > 0; ) {

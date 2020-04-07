@@ -2,6 +2,7 @@ package me.paulf.minecraftmania;
 
 import net.minecraft.client.MainWindow;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.audio.ISound;
 import net.minecraft.client.audio.SimpleSound;
 import net.minecraft.client.gui.chat.NarratorChatListener;
 import net.minecraft.client.gui.screen.Screen;
@@ -34,7 +35,7 @@ public abstract class TilePuzzleScreen<B extends Board> extends Screen {
         LiveEdit.instance().watch(new ResourceLocation(MinecraftMania.ID, "shaders/program/sliding_puzzle.fsh"), this.effect::reload);
     }
 
-    protected abstract B createBoard(final int width, final int height);
+    protected abstract B createBoard(final int columns, final int rows);
 
     protected abstract boolean isBlank(final int index);
 
@@ -52,7 +53,9 @@ public abstract class TilePuzzleScreen<B extends Board> extends Screen {
     @Override
     public void init(final Minecraft mc, final int width, final int height) {
         super.init(mc, width, height);
-        this.board = this.createBoard(width, height);
+        final int rows = 3;
+        final int columns = (width * rows + height - 1) / height;
+        this.board = this.createBoard(columns, rows);
         this.hover = -1;
         final MainWindow win = mc.getMainWindow();
         this.updateHover(
@@ -90,6 +93,7 @@ public abstract class TilePuzzleScreen<B extends Board> extends Screen {
             this.parent.render(mouseX, mouseY, delta);
         }
         this.post(delta);
+        super.render(mouseX, mouseY, delta);
     }
 
     protected int cell(final double x, final double y) {
@@ -104,8 +108,21 @@ public abstract class TilePuzzleScreen<B extends Board> extends Screen {
     }
 
     protected void onMove() {
-        this.minecraft.getSoundHandler().play(SimpleSound.master(SoundEvents.BLOCK_WOOD_PLACE, 1.0F));
-        this.upload();
+        this.play(SimpleSound.master(SoundEvents.BLOCK_WOOD_PLACE, 1.0F));
+        if (this.board.isSolved()) {
+            this.play(SimpleSound.master(SoundEvents.ENTITY_PLAYER_LEVELUP, 1.0F));
+            if (this.minecraft != null) {
+                this.minecraft.displayGuiScreen(this.parent);
+            }
+        } else {
+            this.upload();
+        }
+    }
+
+    protected void play(final ISound sound) {
+        if (this.minecraft != null) {
+            this.minecraft.getSoundHandler().play(sound);
+        }
     }
 
     @Override

@@ -1,9 +1,11 @@
 package me.paulf.minecraftmania;
 
 public class Board {
-    final int columns;
-    final int rows;
-    final int[] state;
+    protected final int columns;
+
+    protected final int rows;
+
+    protected final int[] state;
 
     public Board(final int columns, final int rows) {
         this.columns = columns;
@@ -40,5 +42,14 @@ public class Board {
 
     public boolean contains(final int x, final int y) {
         return x >= 0 && y >= 0 && x < this.columns && y < this.rows;
+    }
+
+    public boolean isSolved() {
+        for (int i = this.columns * this.rows; i --> 0; ) {
+            if (this.state[i] != i) {
+                return false;
+            }
+        }
+        return true;
     }
 }
