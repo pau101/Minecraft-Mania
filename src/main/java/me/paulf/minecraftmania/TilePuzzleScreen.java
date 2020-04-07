@@ -35,6 +35,10 @@ public abstract class TilePuzzleScreen<B extends Board> extends Screen {
         LiveEdit.instance().watch(new ResourceLocation(MinecraftMania.ID, "shaders/program/sliding_puzzle.fsh"), this.effect::reload);
     }
 
+    public final boolean isSolved() {
+        return this.board.isSolved();
+    }
+
     protected abstract B createBoard(final int columns, final int rows);
 
     protected abstract boolean isBlank(final int index);
@@ -47,6 +51,11 @@ public abstract class TilePuzzleScreen<B extends Board> extends Screen {
 
     @Override
     public boolean isPauseScreen() {
+        return false;
+    }
+
+    @Override
+    public boolean shouldCloseOnEsc() {
         return false;
     }
 

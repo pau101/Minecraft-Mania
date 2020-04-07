@@ -9,16 +9,16 @@ import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import me.paulf.minecraftmania.function.ChangeLanguageFunction;
 import me.paulf.minecraftmania.function.CommandFunction;
 import me.paulf.minecraftmania.function.DayTimeFunction;
+import me.paulf.minecraftmania.function.DeathAnimationFunction;
 import me.paulf.minecraftmania.function.DisableKeyFunction;
 import me.paulf.minecraftmania.function.EffectFunction;
-import me.paulf.minecraftmania.function.RandomWorldEventFunction;
 import me.paulf.minecraftmania.function.GiveFunction;
 import me.paulf.minecraftmania.function.KillFunction;
 import me.paulf.minecraftmania.function.NightTimeFunction;
 import me.paulf.minecraftmania.function.PostProcessingFunction;
 import me.paulf.minecraftmania.function.PressKeyFunction;
 import me.paulf.minecraftmania.function.RandomSoundPicker;
-import me.paulf.minecraftmania.function.DeathAnimationFunction;
+import me.paulf.minecraftmania.function.RandomWorldEventFunction;
 import me.paulf.minecraftmania.function.SoundFunction;
 import me.paulf.minecraftmania.function.SummonFunction;
 import me.paulf.minecraftmania.function.SwapKeyFunction;
@@ -27,6 +27,7 @@ import me.paulf.minecraftmania.function.VibratoFunction;
 import net.minecraft.client.GameSettings;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
+import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.command.ISuggestionProvider;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.player.PlayerEntity;
@@ -43,6 +44,7 @@ import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.ClientChatReceivedEvent;
 import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
+import net.minecraftforge.client.event.GuiOpenEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.Event;
@@ -201,6 +203,12 @@ public final class MinecraftMania {
             final IEventBus bus = MinecraftForge.EVENT_BUS;
             //Minecraft.getInstance().enqueue(() -> bus.register(new ShaderPostProcessing()));
             this.sticky.register(bus);
+            bus.<GuiOpenEvent>addListener(e -> {
+                final Screen current = Minecraft.getInstance().currentScreen;
+                if (current instanceof TilePuzzleScreen<?> && !((TilePuzzleScreen<?>) current).isSolved() && !(e.getGui() instanceof TilePuzzleScreen<?>)) {
+                    e.setCanceled(true);
+                }
+            });
             //bus.<ClientPlayerNetworkEvent.LoggedInEvent>addListener(e -> this.join(e.getPlayer()));
             //bus.<ClientPlayerNetworkEvent.RespawnEvent>addListener(e -> this.join(e.getPlayer()));
             bus.<ClientPlayerNetworkEvent.LoggedOutEvent>addListener(e -> this.leave());
