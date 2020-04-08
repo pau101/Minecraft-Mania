@@ -1,5 +1,6 @@
 package me.paulf.minecraftmania;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.MainWindow;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.audio.ISound;
@@ -10,6 +11,8 @@ import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.client.renderer.texture.NativeImage;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.SoundEvents;
+import net.minecraftforge.client.event.RenderGameOverlayEvent;
+import net.minecraftforge.common.MinecraftForge;
 
 import javax.annotation.Nullable;
 
@@ -26,6 +29,8 @@ public abstract class TilePuzzleScreen<B extends Board> extends Screen {
     protected B board;
 
     private int hover = -1;
+
+    private int ticks = 0;
 
     public TilePuzzleScreen(final Screen parent) {
         super(NarratorChatListener.EMPTY);
@@ -94,6 +99,7 @@ public abstract class TilePuzzleScreen<B extends Board> extends Screen {
             this.parent.tick();
         }
         super.tick();
+        this.ticks++;
     }
 
     @Override
@@ -102,7 +108,31 @@ public abstract class TilePuzzleScreen<B extends Board> extends Screen {
             this.parent.render(mouseX, mouseY, delta);
         }
         this.post(delta);
+        this.renderChat(delta);
         super.render(mouseX, mouseY, delta);
+    }
+
+    private void renderChat(final float delta) {
+        if (this.minecraft == null) {
+            return;
+        }
+        if (this.minecraft.world != null && (!this.minecraft.gameSettings.hideGUI || this.parent != null)) {
+            final RenderGameOverlayEvent parent = new RenderGameOverlayEvent(delta, this.minecraft.getMainWindow());
+            final Chat event = new Chat(parent, 0, this.height - 48);
+            if (MinecraftForge.EVENT_BUS.post(event)) {
+                return;
+            }
+            RenderSystem.enableBlend();
+            RenderSystem.defaultBlendFunc();
+            RenderSystem.disableAlphaTest();
+            RenderSystem.pushMatrix();
+            RenderSystem.translatef(event.getPosX(), event.getPosY(), 0.0F);
+            this.minecraft.ingameGUI.getChatGUI().render(this.minecraft.ingameGUI.getTicks());
+            RenderSystem.popMatrix();
+            RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+            RenderSystem.enableAlphaTest();
+            MinecraftForge.EVENT_BUS.post(new RenderGameOverlayEvent.Post(parent, RenderGameOverlayEvent.ElementType.CHAT));
+        }
     }
 
     protected int cell(final double x, final double y) {
@@ -159,5 +189,11 @@ public abstract class TilePuzzleScreen<B extends Board> extends Screen {
         super.removed();
         this.effect.close();
         this.texture.close();
+    }
+
+    public static class Chat extends RenderGameOverlayEvent.Chat {
+        public Chat(final RenderGameOverlayEvent parent, final int posX, final int posY) {
+            super(parent, posX, posY);
+        }
     }
 }

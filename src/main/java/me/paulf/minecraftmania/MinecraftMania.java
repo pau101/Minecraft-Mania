@@ -45,9 +45,11 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.ClientChatReceivedEvent;
 import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
 import net.minecraftforge.client.event.GuiOpenEvent;
+import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.Event;
+import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.DistExecutor;
@@ -207,6 +209,15 @@ public final class MinecraftMania {
                 final Screen current = Minecraft.getInstance().currentScreen;
                 if (current instanceof TilePuzzleScreen<?> && !((TilePuzzleScreen<?>) current).isSolved() && !(e.getGui() instanceof TilePuzzleScreen<?>)) {
                     e.setCanceled(true);
+                }
+            });
+            bus.<RenderGameOverlayEvent.Chat>addListener(EventPriority.HIGH, e -> {
+                if (!(e instanceof TilePuzzleScreen.Chat)) {
+                    final Minecraft mc = Minecraft.getInstance();
+                    if (mc.currentScreen instanceof TilePuzzleScreen<?>) {
+                        e.setCanceled(true);
+                        mc.getProfiler().endSection();
+                    }
                 }
             });
             //bus.<ClientPlayerNetworkEvent.LoggedInEvent>addListener(e -> this.join(e.getPlayer()));
