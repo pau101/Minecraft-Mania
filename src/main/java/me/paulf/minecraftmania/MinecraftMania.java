@@ -15,6 +15,7 @@ import me.paulf.minecraftmania.function.EffectFunction;
 import me.paulf.minecraftmania.function.GiveFunction;
 import me.paulf.minecraftmania.function.KillFunction;
 import me.paulf.minecraftmania.function.NightTimeFunction;
+import me.paulf.minecraftmania.function.OpenScreenFunction;
 import me.paulf.minecraftmania.function.PostProcessingFunction;
 import me.paulf.minecraftmania.function.PressKeyFunction;
 import me.paulf.minecraftmania.function.RandomSoundPicker;
@@ -175,8 +176,8 @@ public final class MinecraftMania {
         .build();
 
     private final CommandSet challengeMap = new CommandSet.Builder()
-        .add("sliding_puzzle", context -> Minecraft.getInstance().enqueue(() -> Minecraft.getInstance().displayGuiScreen(new SlidingPuzzleScreen(Minecraft.getInstance().currentScreen))))
-        .add("jigsaw_puzzle", context -> Minecraft.getInstance().enqueue(() -> Minecraft.getInstance().displayGuiScreen(new JigsawPuzzleScreen(Minecraft.getInstance().currentScreen))))
+        .add("sliding_puzzle", new OpenScreenFunction(SlidingPuzzleScreen::new))
+        .add("jigsaw_puzzle", new OpenScreenFunction(JigsawPuzzleScreen::new))
         .build();
 
     private final CommandSet set = new CommandSet.Builder()

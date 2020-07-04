@@ -29,6 +29,10 @@ import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+/**
+ * @author Paul Fulham
+ * @version 1.0.0
+ */
 public final class ClientCommandProvider {
     private static final UnsafeAllocator ALLOCATOR = UnsafeAllocator.create();
 

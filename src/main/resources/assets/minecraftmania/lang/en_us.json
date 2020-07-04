@@ -22,5 +22,7 @@
     "mania.desaturate": "Viewer %1$s desaturated your screen",
     "mania.desaturate.running": "Desaturated for %1$s more seconds",
     "mania.vibrato": "Viewer %1$s turned on vibrato",
-    "mania.vibrato.running": "Vibrato for %1$s more seconds"
+    "mania.vibrato.running": "Vibrato for %1$s more seconds",
+    "mania.sliding_puzzle": "Viewer %1$s made a slide puzzle",
+    "mania.jigsaw_puzzle": "Viewer %1$s made a jigsaw puzzle"
 }
