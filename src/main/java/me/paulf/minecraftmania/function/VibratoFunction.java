@@ -47,7 +47,7 @@ public class VibratoFunction extends DurationFunction {
 
             @SubscribeEvent
             public void play(final SoundEvent.SoundSourceEvent e) {
-                e.getSource().func_216422_a(this.getPitch());
+                e.getSource().setPitch(this.getPitch());
             }
 
             @Override
@@ -56,7 +56,7 @@ public class VibratoFunction extends DurationFunction {
             }
 
             private void setPitch(final float pitch) {
-                manager.func_217897_a(stream -> stream.forEach(s -> s.func_216422_a(pitch)));
+                manager.func_217897_a(stream -> stream.forEach(s -> s.setPitch(pitch)));
             }
 
             private float getPitch() {

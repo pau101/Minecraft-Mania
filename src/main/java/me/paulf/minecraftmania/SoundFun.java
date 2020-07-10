@@ -20,7 +20,7 @@ public class SoundFun {
 
     private void play(final SoundEvent.SoundSourceEvent e) {
         // func_216435_g: stopped
-        if (e.getSource().func_216435_g()) {
+        if (e.getSource().isStopped()) {
             return;
         }
         //noinspection ConstantConditions

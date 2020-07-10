@@ -32,8 +32,10 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.command.ISuggestionProvider;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.Item;
 import net.minecraft.item.Items;
 import net.minecraft.potion.Effects;
+import net.minecraft.resources.IReloadableResourceManager;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.SoundEvents;
 import net.minecraft.util.text.ChatType;
@@ -55,6 +57,7 @@ import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.registries.ForgeRegistries;
 
 import java.time.Duration;
 import java.util.Iterator;
@@ -63,12 +66,15 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
+import java.util.stream.Collectors;
 
 @Mod(MinecraftMania.ID)
 public final class MinecraftMania {
     public static final String ID = "minecraftmania";
 
     private final GameSettings settings = Minecraft.getInstance().gameSettings;
+
+    private final WordBlacklist blacklist = new WordBlacklist();
 
     private final CommandSet effectMap = new CommandSet.Builder(EffectFunction::isOperable)
         .add("effect_damage", new EffectFunction(Effects.INSTANT_DAMAGE, 1, 0))
@@ -178,6 +184,7 @@ public final class MinecraftMania {
     private final CommandSet challengeMap = new CommandSet.Builder()
         .add("sliding_puzzle", new OpenScreenFunction(SlidingPuzzleScreen::new))
         .add("jigsaw_puzzle", new OpenScreenFunction(JigsawPuzzleScreen::new))
+        .add("anagram_puzzle", new OpenScreenFunction(parent -> new AnagramPuzzleScreen(parent, this.blacklist)))
         .build();
 
     private final CommandSet set = new CommandSet.Builder()
@@ -203,6 +210,15 @@ public final class MinecraftMania {
     public MinecraftMania() {
         DistExecutor.runWhenOn(Dist.CLIENT, () -> () -> {
             LiveEdit.instance().init();
+            ((IReloadableResourceManager) Minecraft.getInstance().getResourceManager()).addReloadListener(this.blacklist);
+            //noinspection deprecation
+            MinecraftForge.EVENT_BUS.<GuiOpenEvent>addListener((e) -> {
+                final StringBuilder bob = new StringBuilder();
+                for (final Item item : ForgeRegistries.ITEMS) {
+                    bob.append(item.getRegistryName()).append("  >>  ").append(new AnagramPuzzleScreen.ItemHintFactory().create(item).stream().map(ITextComponent::getString).collect(Collectors.joining(", "))).append('\n');
+                }
+                System.out.printf("%s", bob);
+            });
             final IEventBus bus = MinecraftForge.EVENT_BUS;
             //Minecraft.getInstance().enqueue(() -> bus.register(new ShaderPostProcessing()));
             this.sticky.register(bus);

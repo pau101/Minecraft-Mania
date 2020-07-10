@@ -19,7 +19,7 @@ archivesBaseName = "minecraftmania"
 sourceCompatibility = targetCompatibility = JavaVersion.VERSION_1_8
 
 minecraft {
-    mappings channel: "snapshot", version: "20200309-1.15.1"
+    mappings channel: "snapshot", version: "20200514-1.15.1"
     runs {
         client {
             workingDirectory project.file("run")
@@ -47,7 +47,7 @@ jar {
 }
 
 dependencies {
-    minecraft "net.minecraftforge:forge:1.15.2-31.1.18"
+    minecraft "net.minecraftforge:forge:1.15.2-31.2.0"
     // https://mvnrepository.com/artifact/com.squareup.okhttp3/okhttp
     compile "com.squareup.okhttp3:okhttp:4.4.1"
 }

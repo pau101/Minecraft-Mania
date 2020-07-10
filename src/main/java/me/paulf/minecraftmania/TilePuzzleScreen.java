@@ -3,7 +3,6 @@ package me.paulf.minecraftmania;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.MainWindow;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.audio.ISound;
 import net.minecraft.client.audio.SimpleSound;
 import net.minecraft.client.gui.chat.NarratorChatListener;
 import net.minecraft.client.gui.screen.Screen;
@@ -14,17 +13,12 @@ import net.minecraft.util.SoundEvents;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.common.MinecraftForge;
 
-import javax.annotation.Nullable;
-
-public abstract class TilePuzzleScreen<B extends Board> extends Screen {
+public abstract class TilePuzzleScreen<B extends Board> extends ChallengeScreen {
     private static final ResourceLocation SHADER_LOCATION = new ResourceLocation(MinecraftMania.ID, "shaders/post/sliding_puzzle.json");
 
     private final DynamicTexture texture = new DynamicTexture(256, 256, false);
 
     private final PostProcessingEffect effect;
-
-    @Nullable
-    private final Screen parent;
 
     protected B board;
 
@@ -33,8 +27,7 @@ public abstract class TilePuzzleScreen<B extends Board> extends Screen {
     private int ticks = 0;
 
     public TilePuzzleScreen(final Screen parent) {
-        super(NarratorChatListener.EMPTY);
-        this.parent = parent;
+        super(parent, NarratorChatListener.EMPTY);
         Minecraft.getInstance().getTextureManager().loadTexture(new ResourceLocation(MinecraftMania.ID, "textures/effect/puzzle.png"), this.texture);
         this.effect = new PostProcessingEffect(SHADER_LOCATION);
         LiveEdit.instance().watch(new ResourceLocation(MinecraftMania.ID, "shaders/program/sliding_puzzle.fsh"), this.effect::reload);
@@ -52,16 +45,6 @@ public abstract class TilePuzzleScreen<B extends Board> extends Screen {
 
     protected boolean isHover(final int index) {
         return index == this.hover;
-    }
-
-    @Override
-    public boolean isPauseScreen() {
-        return false;
-    }
-
-    @Override
-    public boolean shouldCloseOnEsc() {
-        return false;
     }
 
     @Override
@@ -95,18 +78,13 @@ public abstract class TilePuzzleScreen<B extends Board> extends Screen {
 
     @Override
     public void tick() {
-        if (this.parent != null) {
-            this.parent.tick();
-        }
         super.tick();
         this.ticks++;
     }
 
     @Override
     public void render(final int mouseX, final int mouseY, final float delta) {
-        if (this.parent != null) {
-            this.parent.render(mouseX, mouseY, delta);
-        }
+        this.renderParent(mouseX, mouseY, delta);
         this.post(delta);
         this.renderChat(delta);
         super.render(mouseX, mouseY, delta);
@@ -150,17 +128,9 @@ public abstract class TilePuzzleScreen<B extends Board> extends Screen {
         this.play(SimpleSound.master(SoundEvents.BLOCK_WOOD_PLACE, 1.0F));
         if (this.board.isSolved()) {
             this.play(SimpleSound.master(SoundEvents.ENTITY_PLAYER_LEVELUP, 1.0F));
-            if (this.minecraft != null) {
-                this.minecraft.displayGuiScreen(this.parent);
-            }
+            this.onClose();
         } else {
             this.upload();
-        }
-    }
-
-    protected void play(final ISound sound) {
-        if (this.minecraft != null) {
-            this.minecraft.getSoundHandler().play(sound);
         }
     }
 
