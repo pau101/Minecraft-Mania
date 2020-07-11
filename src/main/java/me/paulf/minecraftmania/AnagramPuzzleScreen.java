@@ -22,19 +22,28 @@ import net.minecraft.item.ShootableItem;
 import net.minecraft.item.SwordItem;
 import net.minecraft.item.ToolItem;
 import net.minecraft.item.TridentItem;
+import net.minecraft.item.crafting.IRecipeType;
+import net.minecraft.state.properties.BlockStateProperties;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.tileentity.AbstractFurnaceTileEntity;
+import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.Direction;
 import net.minecraft.util.StringUtils;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.LanguageMap;
 import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.EmptyBlockReader;
+import net.minecraft.world.World;
+import net.minecraftforge.common.IPlantable;
+import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.apache.commons.lang3.ArrayUtils;
 import org.lwjgl.opengl.GL11;
 
 import javax.annotation.Nullable;
 import java.text.Normalizer;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -69,6 +78,12 @@ public class AnagramPuzzleScreen extends ChallengeScreen {
             .filter(s -> s.length() >= 4 && s.length() <= 10 && s.chars().noneMatch(chr -> Character.getType(chr) == Character.COMBINING_SPACING_MARK))
             .collect(Collectors.toList());
         this.anagram = this.generate(strings, new Random());
+
+        final StringBuilder bob = new StringBuilder();
+        for (final Item item : ForgeRegistries.ITEMS) {
+            bob.append(item.getRegistryName()).append("  >>  ").append(new AnagramPuzzleScreen.ItemHintFactory().create(minecraft.world, item).stream().map(ITextComponent::getString).collect(Collectors.joining(", "))).append('\n');
+        }
+        System.out.printf("%s", bob);
     }
 
     private static String normalize(final String s) {
@@ -93,19 +108,20 @@ public class AnagramPuzzleScreen extends ChallengeScreen {
     }
 
     interface HintFactory<T> {
-        List<ITextComponent> create(final T object);
+        List<ITextComponent> create(final World world, final T object);
     }
 
     public static class ItemHintFactory implements HintFactory<Item> {
         @Override
-        public List<ITextComponent> create(final Item object) {
+        public List<ITextComponent> create(final World world, final Item object) {
             final ImmutableList.Builder<ITextComponent> bob = ImmutableList.builder();
-            if (object instanceof BlockItem && !object.isFood()) {
+            if (object instanceof BlockItem) {
                 bob.add(new TranslationTextComponent("mania.anagram.hint.block"));
-                final ItemGroup group = object.getGroup();
-                if (group != null) {
-                    bob.add(new TranslationTextComponent("mania.anagram.hint.group", new TranslationTextComponent(group.getTranslationKey())));
+                this.addCrafting(world, object, bob);
+                if (object.isFood()) {
+                    bob.add(new TranslationTextComponent("mania.anagram.hint.food"));
                 }
+                final ItemGroup group = object.getGroup();
                 final Block block = ((BlockItem) object).getBlock();
                 final BlockState state = block.getDefaultState();
                 float hardness = 0.0F;
@@ -128,15 +144,46 @@ public class AnagramPuzzleScreen extends ChallengeScreen {
                     if (tool.isPresent()) {
                         bob.add(new TranslationTextComponent(state.getMaterial().isToolNotRequired() ? "mania.anagram.hint.broken_by_tool" : "mania.anagram.hint.requires_tool", new ItemStack(tool.get()).getDisplayName()));
                     } else {
-                        bob.add(new TranslationTextComponent("mania.anagram.hint.no_tool"));
+                        bob.add(new TranslationTextComponent("mania.anagram.hint.any_tool"));
                     }
+                }
+                if (block.isIn(BlockTags.SLABS)) {
+                    bob.add(new TranslationTextComponent("mania.anagram.hint.slab"));
+                } else if (block.isIn(BlockTags.STAIRS)) {
+                    bob.add(new TranslationTextComponent("mania.anagram.hint.stair"));
+                } else if (block.isIn(BlockTags.FENCES)) {
+                    bob.add(new TranslationTextComponent("mania.anagram.hint.fence"));
+                } else if (block.isIn(BlockTags.LOGS)) {
+                    bob.add(new TranslationTextComponent("mania.anagram.hint.log"));
+                } else if (block.isIn(BlockTags.DOORS)) {
+                    bob.add(new TranslationTextComponent("mania.anagram.hint.door"));
+                } else if (block.isIn(BlockTags.CORALS)) {
+                    bob.add(new TranslationTextComponent("mania.anagram.hint.coral"));
+                } else if (block.isIn(BlockTags.FLOWERS)) {
+                    bob.add(new TranslationTextComponent("mania.anagram.hint.flower"));
+                } else if (block.isIn(BlockTags.CROPS)) {
+                    bob.add(new TranslationTextComponent("mania.anagram.hint.crop"));
+                } else if (block instanceof IPlantable) {
+                    bob.add(new TranslationTextComponent("mania.anagram.hint.plant"));
+                }
+                if (Arrays.stream(Direction.values()).anyMatch(d -> state.getFlammability(EmptyBlockReader.INSTANCE, BlockPos.ZERO, d) > 0)) {
+                    bob.add(new TranslationTextComponent("mania.anagram.hint.flammable"));
+                }
+                if (state.getLightValue() > 0 || state.has(BlockStateProperties.LIT)) {
+                    bob.add(new TranslationTextComponent("mania.anagram.hint.luminant"));
+                }
+                final TileEntity entity = state.createTileEntity(EmptyBlockReader.INSTANCE);
+                if (entity != null) {
+                    entity.setWorldAndPos(world, BlockPos.ZERO);
+                    if (entity.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY).filter(handler -> handler.getSlots() > 0).isPresent()) {
+                        bob.add(new TranslationTextComponent("mania.anagram.hint.container"));
+                    }
+                    entity.remove();
                 }
             } else {
                 bob.add(new TranslationTextComponent("mania.anagram.hint.item"));
+                this.addCrafting(world, object, bob);
                 final ItemGroup group = object.getGroup();
-                if (group != null) {
-                    bob.add(new TranslationTextComponent("mania.anagram.hint.group", new TranslationTextComponent(group.getTranslationKey())));
-                }
                 if (object.isFood()) {
                     bob.add(new TranslationTextComponent("mania.anagram.hint.food"));
                 } else if (object instanceof ToolItem) {
@@ -154,6 +201,16 @@ public class AnagramPuzzleScreen extends ChallengeScreen {
                 }
             }
             return bob.build();
+        }
+
+        private void addCrafting(final World world, final Item object, final ImmutableList.Builder<ITextComponent> bob) {
+            if (world.getRecipeManager().getRecipes().stream().anyMatch(r -> r.getType() == IRecipeType.SMELTING && r.getRecipeOutput().getItem() == object)) {
+                bob.add(new TranslationTextComponent("mania.anagram.hint.smelted"));
+            } else if (world.getRecipeManager().getRecipes().stream().anyMatch(r -> r.getType() == IRecipeType.CRAFTING && r.getRecipeOutput().getItem() == object)) {
+                bob.add(new TranslationTextComponent("mania.anagram.hint.crafted"));
+            } else {
+                bob.add(new TranslationTextComponent("mania.anagram.hint.uncraftable"));
+            }
         }
 
         private boolean hasAttribute(final Item item, final IAttribute attribute, final EquipmentSlotType... slots) {

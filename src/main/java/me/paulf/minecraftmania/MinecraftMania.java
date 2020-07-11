@@ -32,7 +32,6 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.command.ISuggestionProvider;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.Item;
 import net.minecraft.item.Items;
 import net.minecraft.potion.Effects;
 import net.minecraft.resources.IReloadableResourceManager;
@@ -57,7 +56,6 @@ import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.registries.ForgeRegistries;
 
 import java.time.Duration;
 import java.util.Iterator;
@@ -66,7 +64,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
-import java.util.stream.Collectors;
 
 @Mod(MinecraftMania.ID)
 public final class MinecraftMania {
@@ -211,14 +208,6 @@ public final class MinecraftMania {
         DistExecutor.runWhenOn(Dist.CLIENT, () -> () -> {
             LiveEdit.instance().init();
             ((IReloadableResourceManager) Minecraft.getInstance().getResourceManager()).addReloadListener(this.blacklist);
-            //noinspection deprecation
-            MinecraftForge.EVENT_BUS.<GuiOpenEvent>addListener((e) -> {
-                final StringBuilder bob = new StringBuilder();
-                for (final Item item : ForgeRegistries.ITEMS) {
-                    bob.append(item.getRegistryName()).append("  >>  ").append(new AnagramPuzzleScreen.ItemHintFactory().create(item).stream().map(ITextComponent::getString).collect(Collectors.joining(", "))).append('\n');
-                }
-                System.out.printf("%s", bob);
-            });
             final IEventBus bus = MinecraftForge.EVENT_BUS;
             //Minecraft.getInstance().enqueue(() -> bus.register(new ShaderPostProcessing()));
             this.sticky.register(bus);
