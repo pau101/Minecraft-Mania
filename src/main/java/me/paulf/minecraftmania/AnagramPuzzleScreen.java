@@ -78,12 +78,6 @@ public class AnagramPuzzleScreen extends ChallengeScreen {
             .filter(s -> s.length() >= 4 && s.length() <= 10 && s.chars().noneMatch(chr -> Character.getType(chr) == Character.COMBINING_SPACING_MARK))
             .collect(Collectors.toList());
         this.anagram = this.generate(strings, new Random());
-
-        final StringBuilder bob = new StringBuilder();
-        for (final Item item : ForgeRegistries.ITEMS) {
-            bob.append(item.getRegistryName()).append("  >>  ").append(new AnagramPuzzleScreen.ItemHintFactory().create(minecraft.world, item).stream().map(ITextComponent::getString).collect(Collectors.joining(", "))).append('\n');
-        }
-        System.out.printf("%s", bob);
     }
 
     private static String normalize(final String s) {

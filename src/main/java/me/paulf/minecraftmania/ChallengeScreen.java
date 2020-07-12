@@ -22,7 +22,7 @@ public abstract class ChallengeScreen extends Screen {
 
     @Override
     public final boolean shouldCloseOnEsc() {
-        return false;
+        return true;
     }
 
     @Override

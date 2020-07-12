@@ -29,6 +29,7 @@ import net.minecraft.client.GameSettings;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.command.Commands;
 import net.minecraft.command.ISuggestionProvider;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.player.PlayerEntity;
@@ -56,6 +57,8 @@ import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.event.server.FMLServerStartingEvent;
+import org.apache.logging.log4j.LogManager;
 
 import java.time.Duration;
 import java.util.Iterator;
@@ -205,6 +208,16 @@ public final class MinecraftMania {
     private State state = new OutOfGameState();
 
     public MinecraftMania() {
+        MinecraftForge.EVENT_BUS.<FMLServerStartingEvent>addListener(e -> {
+            e.getCommandDispatcher().register(Commands.literal("anagramhints").executes(context -> {
+                try {
+                    new ResourceGraph().build(context.getSource().getWorld());
+                } catch (final Exception err) {
+                    LogManager.getLogger().catching(err);
+                }
+                return 1;
+            }));
+        });
         DistExecutor.runWhenOn(Dist.CLIENT, () -> () -> {
             LiveEdit.instance().init();
             ((IReloadableResourceManager) Minecraft.getInstance().getResourceManager()).addReloadListener(this.blacklist);
