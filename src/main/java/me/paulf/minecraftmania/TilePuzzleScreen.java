@@ -127,8 +127,7 @@ public abstract class TilePuzzleScreen<B extends Board> extends ChallengeScreen 
     protected void onMove() {
         this.play(SimpleSound.master(SoundEvents.BLOCK_WOOD_PLACE, 1.0F));
         if (this.board.isSolved()) {
-            this.play(SimpleSound.master(SoundEvents.ENTITY_PLAYER_LEVELUP, 1.0F));
-            this.onClose();
+            this.complete();
         } else {
             this.upload();
         }
