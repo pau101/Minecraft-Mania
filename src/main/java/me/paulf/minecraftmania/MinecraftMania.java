@@ -76,6 +76,8 @@ public final class MinecraftMania {
 
     private final WordBlacklist blacklist = new WordBlacklist();
 
+    private final AnagramChallenge anagramChallenge = new AnagramChallenge(this.blacklist);
+
     private final CommandSet effectMap = new CommandSet.Builder(EffectFunction::isOperable)
         .add("effect_damage", new EffectFunction(Effects.INSTANT_DAMAGE, 1, 0))
         .add("effect_health", new EffectFunction(Effects.INSTANT_HEALTH, 1, 0))
@@ -184,7 +186,7 @@ public final class MinecraftMania {
     private final CommandSet challengeMap = new CommandSet.Builder()
         .add("sliding_puzzle", new OpenScreenFunction(SlidingPuzzleScreen::new))
         .add("jigsaw_puzzle", new OpenScreenFunction(JigsawPuzzleScreen::new))
-        .add("anagram_puzzle", new OpenScreenFunction(parent -> new AnagramPuzzleScreen(parent, this.blacklist)))
+        .add("anagram_puzzle", new OpenScreenFunction(parent -> new AnagramPuzzleScreen(parent, this.anagramChallenge)))
         .build();
 
     private final CommandSet set = new CommandSet.Builder()
@@ -222,6 +224,7 @@ public final class MinecraftMania {
             LiveEdit.instance().init();
             ((IReloadableResourceManager) Minecraft.getInstance().getResourceManager()).addReloadListener(this.blacklist);
             final IEventBus bus = MinecraftForge.EVENT_BUS;
+            this.anagramChallenge.register(bus);
             //Minecraft.getInstance().enqueue(() -> bus.register(new ShaderPostProcessing()));
             this.sticky.register(bus);
             bus.<GuiOpenEvent>addListener(e -> {
