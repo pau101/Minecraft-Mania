@@ -74,7 +74,7 @@ public class AnagramPuzzleScreen extends ChallengeScreen {
         this.minecraft.keyboardListener.enableRepeatEvents(false);
     }
 
-    @SuppressWarnings({"IntegerDivisionInFloatingPointContext", "deprecation"})
+    @SuppressWarnings({"IntegerDivisionInFloatingPointContext"})
     @Override
     public void render(final int mouseX, final int mouseY, final float delta) {
         this.renderParent(mouseX, mouseY, delta);
@@ -91,12 +91,12 @@ public class AnagramPuzzleScreen extends ChallengeScreen {
             final int index = it.nextIndex();
             final boolean show = index < this.shownHints;
             if (!show && !this.answer.isFocused()) break;
-            final String line = show ? it.next() : (TextFormatting.ITALIC + I18n.format("mania.anagram.hint", this.getKeyName(GLFW.GLFW_KEY_ENTER)));
+            final String line = show ? it.next() : (TextFormatting.ITALIC + I18n.format("mania.anagram.hint", getKeyName(GLFW.GLFW_KEY_ENTER)));
             this.font.drawString(line, this.answer.x + 4, this.height / 2 - 24 + index * (1 + this.font.FONT_HEIGHT), show ? 0xFFFFFF : 0xC0C0C0);
             if (!show) break;
         }
         final String word = this.anagram.getWord();
-        final int dist = MathHelper.clamp(StringUtils.getLevenshteinDistance(word, this.answer.getText()), 0, word.length());
+        final int dist = MathHelper.clamp(getLevenshteinDistance(word, this.answer.getText()), 0, word.length());
         final int size = this.answer.getWidth();
         fill(this.answer.x, this.answer.y + this.answer.getHeight() + 4, this.answer.x + (size - dist * size / word.length()), this.answer.y + this.answer.getHeight() + 4 + 2, 0xFFFFFFFF);
         this.answer.render(mouseX, mouseX, delta);
@@ -115,7 +115,12 @@ public class AnagramPuzzleScreen extends ChallengeScreen {
         }
     }
 
-    public String getKeyName(final int key) {
+    @SuppressWarnings("deprecation") // No apache I cannot simply use commons-text instead
+    private static int getLevenshteinDistance(final String s, final String t) {
+        return StringUtils.getLevenshteinDistance(s, t);
+    }
+
+    private static String getKeyName(final int key) {
         final String name = InputMappings.getKeynameFromKeycode(key);
         return name == null ? I18n.format(InputMappings.Type.KEYSYM.getOrMakeInput(key).getTranslationKey()) : name;
     }
