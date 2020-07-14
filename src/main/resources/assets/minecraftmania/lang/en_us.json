@@ -26,6 +26,7 @@
     "mania.sliding_puzzle": "Viewer %1$s made a slide puzzle",
     "mania.jigsaw_puzzle": "Viewer %1$s made a jigsaw puzzle",
     "mania.anagram_puzzle": "Viewer %1$s made an anagram",
+    "mania.anagram.title": "Solve the anagram:",
     "mania.anagram.hint.minecraft": "Game",
     "mania.anagram.hint.block": "Block",
     "mania.anagram.hint.item": "Item",

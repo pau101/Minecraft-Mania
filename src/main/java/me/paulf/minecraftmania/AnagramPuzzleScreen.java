@@ -4,10 +4,12 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.UnmodifiableListIterator;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.chat.NarratorChatListener;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.TranslationTextComponent;
+import org.apache.commons.lang3.StringUtils;
 import org.lwjgl.opengl.GL11;
 
 import javax.annotation.Nullable;
@@ -25,7 +27,7 @@ public class AnagramPuzzleScreen extends ChallengeScreen {
     private int shownHints = 0;
 
     public AnagramPuzzleScreen(@Nullable final Screen parent, final AnagramChallenge challenge) {
-        super(parent, NarratorChatListener.EMPTY);
+        super(parent, new TranslationTextComponent("mania.anagram.title"));
         this.challenge = challenge;
     }
 
@@ -66,6 +68,7 @@ public class AnagramPuzzleScreen extends ChallengeScreen {
         this.renderParent(mouseX, mouseY, delta);
         RenderSystem.clear(GL11.GL_DEPTH_BUFFER_BIT, Minecraft.IS_RUNNING_ON_MAC);
         this.renderBackground();
+        this.drawCenteredString(this.font, this.title.getFormattedText(), this.width / 2, this.height / 2 - 70, 0xFFFFFF);
         RenderSystem.pushMatrix();
         RenderSystem.translatef(this.width / 2, this.height / 2 - 40, 0.0F);
         RenderSystem.scalef(2.0F, 2.0F, 1.0F);
@@ -73,8 +76,12 @@ public class AnagramPuzzleScreen extends ChallengeScreen {
         RenderSystem.popMatrix();
         final UnmodifiableListIterator<String> it = this.hints.listIterator();
         for (int index; it.hasNext() && (index = it.nextIndex()) < this.shownHints; ) {
-            this.font.drawString(it.next(), this.answer.x + 4, this.height / 2 - 26 + index * (1 + this.font.FONT_HEIGHT), 0xC0C0C0);
+            this.font.drawString(it.next(), this.answer.x + 4, this.height / 2 - 24 + index * (1 + this.font.FONT_HEIGHT), 0xC0C0C0);
         }
+        final String word = this.anagram.getWord();
+        final int dist = MathHelper.clamp(StringUtils.getLevenshteinDistance(word, this.answer.getText()), 0, word.length());
+        final int size = this.answer.getWidth();
+        fill(this.answer.x, this.answer.y + this.answer.getHeight() + 4, this.answer.x + (size - dist * size / word.length()), this.answer.y + this.answer.getHeight() + 4 + 2, 0xFFFFFFFF);
         this.answer.render(mouseX, mouseX, delta);
         super.render(mouseX, mouseY, delta);
     }

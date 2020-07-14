@@ -14,6 +14,14 @@ public class Anagram<T> {
         this.value = value;
     }
 
+    public String getWord() {
+        return this.word.value;
+    }
+
+    public String getValue() {
+        return this.value;
+    }
+
     public List<ITextComponent> getHints(final World world) {
         return this.word.getHints(world);
     }
