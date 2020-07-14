@@ -6,10 +6,14 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
+import net.minecraft.client.resources.I18n;
+import net.minecraft.client.util.InputMappings;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.TextFormatting;
 import net.minecraft.util.text.TranslationTextComponent;
 import org.apache.commons.lang3.StringUtils;
+import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL11;
 
 import javax.annotation.Nullable;
@@ -35,7 +39,16 @@ public class AnagramPuzzleScreen extends ChallengeScreen {
     public void init(final Minecraft minecraft, final int width, final int height) {
         super.init(minecraft, width, height);
         this.minecraft.keyboardListener.enableRepeatEvents(true);
-        this.answer = new TextFieldWidget(this.font, this.width / 2 - 180 / 2, this.height / 2 + 20, 180, 20, "");
+        this.answer = new TextFieldWidget(this.font, this.width / 2 - 180 / 2, this.height / 2 + 20, 180, 20, "") {
+            @Override
+            public boolean keyPressed(final int key, final int scanCode, final int modifiers) {
+                if (key == GLFW.GLFW_KEY_ENTER || key == GLFW.GLFW_KEY_KP_ENTER) {
+                    AnagramPuzzleScreen.this.onEnter();
+                    return true;
+                }
+                return super.keyPressed(key, scanCode, modifiers);
+            }
+        };
         this.answer.setFocused2(true);
         this.answer.setResponder(this::onAnswerChange);
         this.children.add(this.answer);
@@ -46,8 +59,7 @@ public class AnagramPuzzleScreen extends ChallengeScreen {
         } else {
             this.hints = ImmutableList.of();
         }
-        this.shownHints = Integer.MAX_VALUE;
-        /*this.answer.setMessage(this.anagram.value.replaceAll("(?<=.)", ".") + " Answer");*/
+        this.shownHints = 0;
     }
 
     @Override
@@ -62,7 +74,7 @@ public class AnagramPuzzleScreen extends ChallengeScreen {
         this.minecraft.keyboardListener.enableRepeatEvents(false);
     }
 
-    @SuppressWarnings("IntegerDivisionInFloatingPointContext")
+    @SuppressWarnings({"IntegerDivisionInFloatingPointContext", "deprecation"})
     @Override
     public void render(final int mouseX, final int mouseY, final float delta) {
         this.renderParent(mouseX, mouseY, delta);
@@ -75,8 +87,13 @@ public class AnagramPuzzleScreen extends ChallengeScreen {
         this.font.drawString(this.anagram.value, -this.font.getStringWidth(this.anagram.value) / 2, -this.font.FONT_HEIGHT / 2, 0xFFFFFF);
         RenderSystem.popMatrix();
         final UnmodifiableListIterator<String> it = this.hints.listIterator();
-        for (int index; it.hasNext() && (index = it.nextIndex()) < this.shownHints; ) {
-            this.font.drawString(it.next(), this.answer.x + 4, this.height / 2 - 24 + index * (1 + this.font.FONT_HEIGHT), 0xC0C0C0);
+        while (it.hasNext()) {
+            final int index = it.nextIndex();
+            final boolean show = index < this.shownHints;
+            if (!show && !this.answer.isFocused()) break;
+            final String line = show ? it.next() : (TextFormatting.ITALIC + I18n.format("mania.anagram.hint", this.getKeyName(GLFW.GLFW_KEY_ENTER)));
+            this.font.drawString(line, this.answer.x + 4, this.height / 2 - 24 + index * (1 + this.font.FONT_HEIGHT), show ? 0xFFFFFF : 0xC0C0C0);
+            if (!show) break;
         }
         final String word = this.anagram.getWord();
         final int dist = MathHelper.clamp(StringUtils.getLevenshteinDistance(word, this.answer.getText()), 0, word.length());
@@ -90,5 +107,16 @@ public class AnagramPuzzleScreen extends ChallengeScreen {
         if (this.anagram.test(s)) {
             this.complete();
         }
+    }
+
+    private void onEnter() {
+        if (this.shownHints < this.hints.size()) {
+            this.shownHints++;
+        }
+    }
+
+    public String getKeyName(final int key) {
+        final String name = InputMappings.getKeynameFromKeycode(key);
+        return name == null ? I18n.format(InputMappings.Type.KEYSYM.getOrMakeInput(key).getTranslationKey()) : name;
     }
 }
