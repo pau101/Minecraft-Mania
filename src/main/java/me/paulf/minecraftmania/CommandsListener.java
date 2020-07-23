@@ -25,7 +25,7 @@ public class CommandsListener {
         bus.addListener(this::logout);
     }
 
-    // get initial empty commands
+    // initialize to empty CommandDispatcher to only callback for SCommandListPacket
     private void login(final ClientPlayerNetworkEvent.LoggedInEvent e) {
         final Minecraft mc = Minecraft.getInstance();
         final ClientPlayerEntity player = mc.player;
@@ -36,8 +36,7 @@ public class CommandsListener {
 
     private void tick(final TickEvent.ClientTickEvent e) {
         if (e.phase == TickEvent.Phase.START && this.knownDispatcher != null) {
-            final Minecraft mc = Minecraft.getInstance();
-            final ClientPlayerEntity player = mc.player;
+            final ClientPlayerEntity player = Minecraft.getInstance().player;
             if (player != null) {
                 final CommandDispatcher<ISuggestionProvider> dispatcher = player.connection.getCommandDispatcher();
                 if (dispatcher != this.knownDispatcher) {
