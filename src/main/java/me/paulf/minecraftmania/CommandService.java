@@ -1,6 +1,14 @@
 package me.paulf.minecraftmania;
 
 import com.google.common.base.Throwables;
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonParser;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -32,6 +40,7 @@ import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.Nullable;
 
 import javax.net.ssl.SSLException;
 import java.net.SocketException;
@@ -45,12 +54,14 @@ public class CommandService implements Runnable {
     private final String host;
     private final int port;
     private final HttpHeaders headers;
+    private final CommandProcessor processor;
 
-    public CommandService(final URI uri, final String host, final int port, final HttpHeaders headers) {
+    public CommandService(final URI uri, final String host, final int port, final HttpHeaders headers, final CommandProcessor processor) {
         this.uri = uri;
         this.host = host;
         this.port = port;
         this.headers = headers;
+        this.processor = processor;
     }
 
     public void stop() {
@@ -122,11 +133,11 @@ public class CommandService implements Runnable {
     }
 
     public static void main(final String[] args) {
-        final CommandService service = create(URI.create("ws://localhost"), "undefined");
+        final CommandService service = create(URI.create("ws://localhost"), "undefined", cmd -> Futures.immediateFuture("success"));
         service.run();
     }
 
-    public static CommandService create(final URI uri, final String token) {
+    public static CommandService create(final URI uri, final String token, final CommandProcessor processor) {
         final String scheme = uri.getScheme();
         final int uriPort = uri.getPort();
         final int port;
@@ -145,10 +156,10 @@ public class CommandService implements Runnable {
         }
         final HttpHeaders headers = new DefaultHttpHeaders();
         headers.add(HttpHeaderNames.AUTHORIZATION, "Bearer " + token);
-        return new CommandService(uri, host, port, headers);
+        return new CommandService(uri, host, port, headers, processor);
     }
 
-    public static class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> {
+    public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> {
         private final WebSocketClientHandshaker handshaker;
 
         private ChannelPromise handshakeFuture;
@@ -200,8 +211,7 @@ public class CommandService implements Runnable {
             }
             final WebSocketFrame frame = (WebSocketFrame) msg;
             if (frame instanceof TextWebSocketFrame) {
-                final TextWebSocketFrame textFrame = (TextWebSocketFrame) frame;
-                System.out.println("WebSocket Client received message: " + textFrame.text());
+                this.readText(ch, (TextWebSocketFrame) frame);
             } else if (frame instanceof PongWebSocketFrame) {
                 System.out.println("WebSocket Client received pong");
             } else if (frame instanceof CloseWebSocketFrame) {
@@ -209,13 +219,52 @@ public class CommandService implements Runnable {
             }
         }
 
+        private void readText(final Channel ch, final TextWebSocketFrame frame) {
+            final String text = frame.text();
+            try {
+                final JsonElement json = new JsonParser().parse(text);
+                final JsonArray message = JsonElements.getAsJsonArray(json, "message");
+                if (message.size() != 2) throw new JsonParseException("Expected two message elements, was " + message.size());
+                final String id = JsonElements.getAsString(message.get(0), "id");
+                final JsonObject data = JsonElements.getAsJsonObject(message.get(1), "data");
+                switch (id) {
+                    case "execute_command":
+                        final String exchange = JsonElements.getString(data, "exchange");
+                        final ViewerCommand command = ViewerCommand.from(data);
+                        final ListenableFuture<String> future = CommandService.this.processor.run(command);
+                        Futures.addCallback(future, new FutureCallback<String>() {
+                            @Override
+                            public void onSuccess(@Nullable final String result) {
+
+                            }
+
+                            @Override
+                            public void onFailure(final Throwable t) {
+
+                            }
+                        });
+                        break;
+                    default:
+                        break;
+                }
+            } catch (final JsonParseException e) {
+                LOGGER.error("Encountered malformed json, disconnecting...", e);
+                ch.close();
+                // TODO: alert user
+            }
+        }
+
         @Override
         public void exceptionCaught(final ChannelHandlerContext ctx, final Throwable cause) {
-            cause.printStackTrace();
+            LOGGER.error("Exception occurred", cause);
             if (!this.handshakeFuture.isDone()) {
                 this.handshakeFuture.setFailure(cause);
             }
             ctx.close();
         }
+    }
+
+    public interface CommandProcessor {
+        ListenableFuture<String> run(final ViewerCommand command);
     }
 }

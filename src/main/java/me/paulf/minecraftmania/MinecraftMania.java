@@ -294,7 +294,8 @@ public final class MinecraftMania {
         final CommandSender sender = new OperatorCommandSender(dispatcher, player::sendChatMessage);
         final CommandMap.Builder builder = new CommandMap.Builder();
         this.set.build(new Context(sender, player.world, player), builder);
-        this.moveState(new InGameState(player, builder.build(), sender));
+        final CommandMap commands = builder.build();
+        this.moveState(new InGameState(player, commands, sender));
     }
 
     abstract static class State {
@@ -428,6 +429,7 @@ public final class MinecraftMania {
         void start() {
             super.start();
             MinecraftForge.EVENT_BUS.register(this);
+//            this.commands.keys()
             this.user.sendMessage(new TranslationTextComponent("mania.ready", this.commands.keys().size()).applyTextStyle(TextFormatting.GREEN));
         }
 
