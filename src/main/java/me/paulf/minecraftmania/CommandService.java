@@ -38,6 +38,7 @@ import io.netty.handler.codec.http.websocketx.WebSocketVersion;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
+import io.netty.util.concurrent.GenericFutureListener;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
@@ -46,6 +47,8 @@ import javax.net.ssl.SSLException;
 import java.net.SocketException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.Executor;
+import java.util.function.Consumer;
 
 public class CommandService implements Runnable {
     private static final Logger LOGGER = LogManager.getLogger(CommandService.class);
@@ -55,6 +58,7 @@ public class CommandService implements Runnable {
     private final int port;
     private final HttpHeaders headers;
     private final CommandProcessor processor;
+    private boolean running;
 
     public CommandService(final URI uri, final String host, final int port, final HttpHeaders headers, final CommandProcessor processor) {
         this.uri = uri;
@@ -90,7 +94,7 @@ public class CommandService implements Runnable {
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10000);
             while (!group.isShuttingDown()) {
                 final WebSocketClientHandler handler = new WebSocketClientHandler(
-                    WebSocketClientHandshakerFactory.newHandshaker(this.uri, WebSocketVersion.V13, null, false, this.headers)
+                    WebSocketClientHandshakerFactory.newHandshaker(this.uri, WebSocketVersion.V13, null, false, this.headers), group
                 );
                 b.handler(new ChannelInitializer<SocketChannel>() {
                     @Override
@@ -107,9 +111,9 @@ public class CommandService implements Runnable {
                 if (await(connect, "connect")) continue;
                 final Channel ch = connect.channel();
                 if (await(handler.handshakeFuture(), "handshake")) continue;
-                // Send usable commands
-                ch.writeAndFlush(new TextWebSocketFrame("TODO"));
-                // loop sending command future completions
+                handler.messageConsumer = o -> ch.writeAndFlush(o).addListener(PropagatingFailureListener.INSTANCE);
+                handler.messageConsumer.accept(new TextWebSocketFrame("TODO: enabled commands"));
+                ch.closeFuture().await();
             }
         } catch (final InterruptedException interrupted) {
             Thread.currentThread().interrupt();
@@ -159,13 +163,27 @@ public class CommandService implements Runnable {
         return new CommandService(uri, host, port, headers, processor);
     }
 
+    static class PropagatingFailureListener implements GenericFutureListener<ChannelFuture> {
+        static final PropagatingFailureListener INSTANCE = new PropagatingFailureListener();
+
+        @Override
+        public void operationComplete(final ChannelFuture future) throws Exception {
+            if (!future.isSuccess()) {
+                future.channel().pipeline().fireExceptionCaught(future.cause());
+            }
+        }
+    }
+
     public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> {
         private final WebSocketClientHandshaker handshaker;
+        private final Executor executor;
+        private Consumer<Object> messageConsumer = o -> {};
 
         private ChannelPromise handshakeFuture;
 
-        public WebSocketClientHandler(final WebSocketClientHandshaker handshaker) {
+        public WebSocketClientHandler(final WebSocketClientHandshaker handshaker, final Executor executor) {
             this.handshaker = handshaker;
+            this.executor = executor;
         }
 
         public ChannelFuture handshakeFuture() {
@@ -224,11 +242,11 @@ public class CommandService implements Runnable {
             try {
                 final JsonElement json = new JsonParser().parse(text);
                 final JsonArray message = JsonElements.getAsJsonArray(json, "message");
-                if (message.size() != 2) throw new JsonParseException("Expected two message elements, was " + message.size());
+                if (message.size() != 2) throw new JsonParseException("Expected 2 message elements, was " + message.size());
                 final String id = JsonElements.getAsString(message.get(0), "id");
                 final JsonObject data = JsonElements.getAsJsonObject(message.get(1), "data");
                 switch (id) {
-                    case "execute_command":
+                    case "run_command":
                         final String exchange = JsonElements.getString(data, "exchange");
                         final ViewerCommand command = ViewerCommand.from(data);
                         final ListenableFuture<String> future = CommandService.this.processor.run(command);
@@ -242,7 +260,7 @@ public class CommandService implements Runnable {
                             public void onFailure(final Throwable t) {
 
                             }
-                        });
+                        }, this.executor);
                         break;
                     default:
                         break;
