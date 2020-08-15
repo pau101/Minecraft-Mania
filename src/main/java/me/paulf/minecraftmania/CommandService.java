@@ -9,6 +9,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
+import com.google.gson.internal.Streams;
+import com.google.gson.stream.JsonWriter;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -44,11 +46,15 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
 import javax.net.ssl.SSLException;
+import java.io.IOException;
+import java.io.StringWriter;
 import java.net.SocketException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.Executor;
-import java.util.function.Consumer;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.TimeUnit;
 
 public class CommandService implements Runnable {
     private static final Logger LOGGER = LogManager.getLogger(CommandService.class);
@@ -59,6 +65,7 @@ public class CommandService implements Runnable {
     private final HttpHeaders headers;
     private final CommandProcessor processor;
     private boolean running;
+    private final BlockingDeque<Object> messageQueue = new LinkedBlockingDeque<>();
 
     public CommandService(final URI uri, final String host, final int port, final HttpHeaders headers, final CommandProcessor processor) {
         this.uri = uri;
@@ -111,8 +118,18 @@ public class CommandService implements Runnable {
                 if (await(connect, "connect")) continue;
                 final Channel ch = connect.channel();
                 if (await(handler.handshakeFuture(), "handshake")) continue;
-                handler.messageConsumer = o -> ch.writeAndFlush(o).addListener(PropagatingFailureListener.INSTANCE);
-                handler.messageConsumer.accept(new TextWebSocketFrame("TODO: enabled commands"));
+                while (ch.isOpen()) {
+                    final Object o = this.messageQueue.pollFirst(1L, TimeUnit.SECONDS);
+                    if (o == null) continue;
+                    final ChannelFuture future = ch.writeAndFlush(o);
+                    future.await();
+                    if (future.isCancelled()) throw new InterruptedException("Cancelled write");
+                    // TODO: handle disconnection specifically
+                    if (!future.isSuccess()) {
+                        this.messageQueue.addFirst(o);
+                        LOGGER.warn("Failed to write message", future.cause());
+                    }
+                }
                 ch.closeFuture().await();
             }
         } catch (final InterruptedException interrupted) {
@@ -177,13 +194,24 @@ public class CommandService implements Runnable {
     public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> {
         private final WebSocketClientHandshaker handshaker;
         private final Executor executor;
-        private Consumer<Object> messageConsumer = o -> {};
 
         private ChannelPromise handshakeFuture;
 
         public WebSocketClientHandler(final WebSocketClientHandshaker handshaker, final Executor executor) {
             this.handshaker = handshaker;
             this.executor = executor;
+        }
+
+        void addMessage(final JsonElement o) {
+            final StringWriter buf = new StringWriter();
+            try (final JsonWriter writer = new JsonWriter(buf)) {
+                writer.setLenient(true);
+                writer.setHtmlSafe(false);
+                Streams.write(o, writer);
+            } catch (final IOException e) {
+                throw new AssertionError(e);
+            }
+            CommandService.this.messageQueue.add(new TextWebSocketFrame(buf.toString()));
         }
 
         public ChannelFuture handshakeFuture() {
@@ -253,14 +281,14 @@ public class CommandService implements Runnable {
                         Futures.addCallback(future, new FutureCallback<String>() {
                             @Override
                             public void onSuccess(@Nullable final String result) {
-
+                                WebSocketClientHandler.this.addMessage(new JsonObject()); // TODO
                             }
 
                             @Override
                             public void onFailure(final Throwable t) {
 
                             }
-                        }, this.executor);
+                        });
                         break;
                     default:
                         break;
