@@ -52,7 +52,6 @@ import java.net.SocketException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.BlockingDeque;
-import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
@@ -101,7 +100,7 @@ public class CommandService implements Runnable {
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10000);
             while (!group.isShuttingDown()) {
                 final WebSocketClientHandler handler = new WebSocketClientHandler(
-                    WebSocketClientHandshakerFactory.newHandshaker(this.uri, WebSocketVersion.V13, null, false, this.headers), group
+                    WebSocketClientHandshakerFactory.newHandshaker(this.uri, WebSocketVersion.V13, null, false, this.headers)
                 );
                 b.handler(new ChannelInitializer<SocketChannel>() {
                     @Override
@@ -193,13 +192,11 @@ public class CommandService implements Runnable {
 
     public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> {
         private final WebSocketClientHandshaker handshaker;
-        private final Executor executor;
 
         private ChannelPromise handshakeFuture;
 
-        public WebSocketClientHandler(final WebSocketClientHandshaker handshaker, final Executor executor) {
+        public WebSocketClientHandler(final WebSocketClientHandshaker handshaker) {
             this.handshaker = handshaker;
-            this.executor = executor;
         }
 
         void addMessage(final JsonElement o) {
