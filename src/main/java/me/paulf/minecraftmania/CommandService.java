@@ -208,7 +208,7 @@ public class CommandService implements Runnable {
             } catch (final IOException e) {
                 throw new AssertionError(e);
             }
-            CommandService.this.messageQueue.add(new TextWebSocketFrame(buf.toString()));
+            CommandService.this.messageQueue.addLast(new TextWebSocketFrame(buf.toString()));
         }
 
         public ChannelFuture handshakeFuture() {
@@ -272,20 +272,7 @@ public class CommandService implements Runnable {
                 final JsonObject data = JsonElements.getAsJsonObject(message.get(1), "data");
                 switch (id) {
                     case "run_command":
-                        final String exchange = JsonElements.getString(data, "exchange");
-                        final ViewerCommand command = ViewerCommand.from(data);
-                        final ListenableFuture<String> future = CommandService.this.processor.run(command);
-                        Futures.addCallback(future, new FutureCallback<String>() {
-                            @Override
-                            public void onSuccess(@Nullable final String result) {
-                                WebSocketClientHandler.this.addMessage(new JsonObject()); // TODO
-                            }
-
-                            @Override
-                            public void onFailure(final Throwable t) {
-
-                            }
-                        });
+                        this.runCommand(data);
                         break;
                     default:
                         break;
@@ -295,6 +282,33 @@ public class CommandService implements Runnable {
                 ch.close();
                 // TODO: alert user
             }
+        }
+
+        private void runCommand(final JsonObject data) {
+            final String exchange = JsonElements.getString(data, "exchange");
+            final ViewerCommand command = ViewerCommand.from(data);
+            final ListenableFuture<String> future = CommandService.this.processor.run(command);
+            Futures.addCallback(future, new FutureCallback<String>() {
+                @Override
+                public void onSuccess(@Nullable final String result) {
+                    this.complete(result);
+                }
+
+                @Override
+                public void onFailure(final Throwable t) {
+                    this.complete("fail");
+                }
+
+                private void complete(@Nullable final String result) {
+                    final JsonArray message = new JsonArray();
+                    message.add("complete_exchange");
+                    final JsonObject data = new JsonObject();
+                    data.addProperty("exchange", exchange);
+                    data.addProperty("result", result);
+                    message.add(data);
+                    WebSocketClientHandler.this.addMessage(message);
+                }
+            });
         }
 
         @Override
