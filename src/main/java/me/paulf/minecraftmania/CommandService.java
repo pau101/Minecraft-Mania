@@ -117,6 +117,7 @@ public class CommandService implements Runnable {
                 if (await(connect, "connect")) continue;
                 final Channel ch = connect.channel();
                 if (await(handler.handshakeFuture(), "handshake")) continue;
+                this.enqueueMessage("hello", new JsonObject());
                 while (ch.isOpen()) {
                     final Object o = this.messageQueue.pollFirst(1L, TimeUnit.SECONDS);
                     if (o == null) continue;
@@ -150,6 +151,21 @@ public class CommandService implements Runnable {
             LOGGER.error("Error during " + message, t);
         }
         return true;
+    }
+
+    private void enqueueMessage(final String id, final JsonObject o) {
+        final JsonArray message = new JsonArray();
+        message.add(id);
+        message.add(o);
+        final StringWriter buf = new StringWriter();
+        try (final JsonWriter writer = new JsonWriter(buf)) {
+            writer.setLenient(true);
+            writer.setHtmlSafe(false);
+            Streams.write(message, writer);
+        } catch (final IOException e) {
+            throw new AssertionError(e);
+        }
+        CommandService.this.messageQueue.addLast(new TextWebSocketFrame(buf.toString()));
     }
 
     public static void main(final String[] args) {
@@ -197,18 +213,6 @@ public class CommandService implements Runnable {
 
         public WebSocketClientHandler(final WebSocketClientHandshaker handshaker) {
             this.handshaker = handshaker;
-        }
-
-        void addMessage(final JsonElement o) {
-            final StringWriter buf = new StringWriter();
-            try (final JsonWriter writer = new JsonWriter(buf)) {
-                writer.setLenient(true);
-                writer.setHtmlSafe(false);
-                Streams.write(o, writer);
-            } catch (final IOException e) {
-                throw new AssertionError(e);
-            }
-            CommandService.this.messageQueue.addLast(new TextWebSocketFrame(buf.toString()));
         }
 
         public ChannelFuture handshakeFuture() {
@@ -300,13 +304,10 @@ public class CommandService implements Runnable {
                 }
 
                 private void complete(@Nullable final String result) {
-                    final JsonArray message = new JsonArray();
-                    message.add("complete_exchange");
                     final JsonObject data = new JsonObject();
                     data.addProperty("exchange", exchange);
                     data.addProperty("result", result);
-                    message.add(data);
-                    WebSocketClientHandler.this.addMessage(message);
+                    CommandService.this.enqueueMessage("complete_exchange", data);
                 }
             });
         }
