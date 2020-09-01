@@ -43,8 +43,8 @@ import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import io.netty.util.concurrent.GenericFutureListener;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.Nullable;
 import javax.net.ssl.SSLException;
 import java.io.IOException;
 import java.io.StringWriter;
@@ -94,11 +94,19 @@ public class CommandService implements Runnable {
         }
         final EventLoopGroup group = new NioEventLoopGroup();
         try {
+            final int TIMEOUT = 10000;
             final Bootstrap b = new Bootstrap()
                 .group(group)
                 .channel(NioSocketChannel.class)
-                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10000);
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, TIMEOUT);
+            long lastConnect = 0;
             while (!group.isShuttingDown()) {
+                // FIXME: better timeout
+                synchronized (this) {
+                    for (long time = lastConnect + TIMEOUT, timeout; (timeout = time - (lastConnect = System.currentTimeMillis())) > 0; ) {
+                        this.wait(timeout);
+                    }
+                }
                 final WebSocketClientHandler handler = new WebSocketClientHandler(
                     WebSocketClientHandshakerFactory.newHandshaker(this.uri, WebSocketVersion.V13, null, false, this.headers)
                 );
@@ -116,21 +124,31 @@ public class CommandService implements Runnable {
                 final ChannelFuture connect = b.connect(this.host, this.port);
                 if (await(connect, "connect")) continue;
                 final Channel ch = connect.channel();
-                if (await(handler.handshakeFuture(), "handshake")) continue;
-                this.enqueueMessage("hello", new JsonObject());
-                while (ch.isOpen()) {
-                    final Object o = this.messageQueue.pollFirst(1L, TimeUnit.SECONDS);
-                    if (o == null) continue;
-                    final ChannelFuture future = ch.writeAndFlush(o);
-                    future.await();
-                    if (future.isCancelled()) throw new InterruptedException("Cancelled write");
-                    // TODO: handle disconnection specifically
-                    if (!future.isSuccess()) {
-                        this.messageQueue.addFirst(o);
-                        LOGGER.warn("Failed to write message", future.cause());
+                try {
+                    LOGGER.debug("Awaiting handshake...");
+                    if (await(handler.handshakeFuture(), "handshake")) continue;
+                    LOGGER.info("Connected!");
+                    this.enqueueMessage("hello", new JsonObject());
+                    while (ch.isOpen()) {
+                        LOGGER.debug("Polling...");
+                        final Object o = this.messageQueue.pollFirst(1L, TimeUnit.SECONDS);
+                        if (o == null) continue;
+                        final ChannelFuture future = ch.writeAndFlush(o);
+                        future.await();
+                        if (future.isCancelled()) throw new InterruptedException("Cancelled write");
+                        // TODO: handle disconnection specifically
+                        if (!future.isSuccess()) {
+                            this.messageQueue.addFirst(o);
+                            LOGGER.warn("Failed to write message", future.cause());
+                        }
+                    }
+                    ch.closeFuture().await();
+                } finally {
+                    if (ch.isOpen()) {
+                        LOGGER.debug("Closing connection...");
+                        ch.close().await();
                     }
                 }
-                ch.closeFuture().await();
             }
         } catch (final InterruptedException interrupted) {
             Thread.currentThread().interrupt();
@@ -144,7 +162,7 @@ public class CommandService implements Runnable {
         if (future.isCancelled()) throw new InterruptedException("Cancelled " + message);
         if (future.isSuccess()) return false;
         final Throwable t = future.cause();
-        Throwables.throwIfUnchecked(t);
+        Throwables.throwIfInstanceOf(t, Error.class);
         if (t.getCause() instanceof SocketException) {
             LOGGER.warn("{}", t.getMessage());
         } else {
@@ -231,7 +249,9 @@ public class CommandService implements Runnable {
 
         @Override
         public void channelInactive(final ChannelHandlerContext ctx) {
-            System.out.println("WebSocket Client disconnected!");
+            if (!this.handshakeFuture.isDone()) {
+                this.handshakeFuture.setFailure(FailureException.INSTANCE);
+            }
         }
 
         @Override
@@ -324,5 +344,15 @@ public class CommandService implements Runnable {
 
     public interface CommandProcessor {
         ListenableFuture<String> run(final ViewerCommand command);
+    }
+
+    static final class FailureException extends RuntimeException {
+        static final FailureException INSTANCE = new FailureException();
+
+        @Override
+        public synchronized Throwable fillInStackTrace() {
+            this.setStackTrace(new StackTraceElement[0]);
+            return this;
+        }
     }
 }
